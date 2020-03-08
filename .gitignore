@@ -1,0 +1,9 @@
+/.coverage
+/.tox/
+/.vscode/
+/build/
+/dist/
+/htmlcov/
+servicelib.egg-info/
+__pycache__/
+*.pyc
