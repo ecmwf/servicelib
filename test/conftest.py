@@ -49,12 +49,10 @@ threads = 1
 """
 
 SERVICELIB_INI_TEMPLATE = """
-[uwsgi]
-config_file = {uwsgi_config_file}
-serve_results = {scratch_dir}
-
 [worker]
+serve_results = {scratch_dir}
 services_dir = {services_dir}
+uwsgi_config_file = {uwsgi_config_file}
 
 [inventory]
 class = default

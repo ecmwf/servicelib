@@ -20,14 +20,14 @@ def main():
     if autoreload > 0:
         cmd.extend(["--py-autoreload", "{}".format(autoreload)])
 
-    serve_results = config.get("uwsgi_serve_results", default=None)
+    serve_results = config.get("worker_serve_results", default=None)
     if serve_results is not None:
         for dname in serve_results.split(":"):
             cmd.extend(["--static-map", "{}={}".format(dname, dname)])
 
     cmd.append(
         config.get(
-            "uwsgi_config_file",
+            "worker_uwsgi_config_file",
             default=str(Path(config.__file__, "..", "uwsgi.ini").resolve()),
         )
     )
