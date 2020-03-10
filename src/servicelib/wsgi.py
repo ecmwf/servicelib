@@ -25,7 +25,8 @@ __all__ = [
 # On y va!
 
 logutils.configure_logging(
-    level=config.get("log_level").upper(), log_type=config.get("log_type"),
+    level=config.get("log_level", default="debug").upper(),
+    log_type=config.get("log_type", default="text"),
 )
 
 services = inventory.instance().load_services()

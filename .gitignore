@@ -2,6 +2,7 @@
 /.tox/
 /.vscode/
 /build/
+/docs/_build/
 /dist/
 /htmlcov/
 servicelib.egg-info/
