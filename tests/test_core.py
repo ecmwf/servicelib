@@ -22,6 +22,8 @@ def test_tracker_format(tracker):
 
 def test_invalid_tracker():
     assert not core.is_valid_tracker("foo")
+    assert not core.is_valid_tracker(None)
+    assert not core.is_valid_tracker(42)
 
 
 def test_request_serialize_roundtrip():

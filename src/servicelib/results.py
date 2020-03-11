@@ -57,7 +57,7 @@ class Result(object):
 
         """
         if k in {"location", "contentType", "contentLength", "metadata"}:
-            raise KeyError("Invalid key '{}'".format(k))
+            raise ValueError("Invalid key '{}'".format(k))
         self._metadata[k] = v
 
     def __enter__(self):

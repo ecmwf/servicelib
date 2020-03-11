@@ -96,7 +96,7 @@ class Request(object):
     def __eq__(self, other):
         if isinstance(other, Request):
             return self.args == other.args and self.kwargs == other.kwargs
-        return False
+        return False  # pragma: no cover
 
 
 class Response(object):
@@ -150,4 +150,4 @@ class Response(object):
     def __eq__(self, other):
         if isinstance(other, Response):
             return self.value == other.value and self.metadata == other.metadata
-        return False
+        return False  # pragma: no cover

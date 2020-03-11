@@ -107,3 +107,18 @@ def test_results_metadata(local_results):
     r["bar"] = "43"
     assert r.as_dict()["foo"] == 42
     assert r.as_dict()["bar"] == "43"
+
+
+@pytest.mark.parametrize(
+    "reserved_key,value",
+    [
+        ("location", "http://some-url"),
+        ("contentType", "text/plain"),
+        ("contentLength", 42),
+    ],
+)
+def test_invalid_results_metadata(local_results, reserved_key, value):
+    r = local_results.create("text/plain")
+    with pytest.raises(ValueError) as exc:
+        r[reserved_key] = value
+    assert str(exc.value) == "Invalid key '{}'".format(reserved_key)
