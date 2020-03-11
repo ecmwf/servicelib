@@ -34,6 +34,11 @@ def main():
         for dname in serve_results.split(":"):
             cmd.extend(["--static-map", "{}={}".format(dname, dname)])
 
+    swagger_yaml = Path("/code/services/swagger.yaml")
+    if swagger_yaml.exists():
+        cmd.extend(["--static-map", "/docs/=/usr/share/nginx/html/"])
+        cmd.extend(["--static-map", "/services/swagger.yaml={}".format(swagger_yaml)])
+
     cmd.append(
         config.get(
             "worker_uwsgi_config_file",
