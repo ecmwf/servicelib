@@ -34,6 +34,7 @@ class Result(object):
         self.content_type = content_type
         self._is_open = False
         self._length = 0
+        self._metadata = {}
 
     def as_dict(self):
         if self._is_open:
@@ -44,10 +45,20 @@ class Result(object):
             "contentLength": self.length,
             "contentType": self.content_type,
         }
+        ret.update(self._metadata)
 
         # TODO: Add `bytes` field, so that we may specify byte ranges.
 
         return ret
+
+    def __setitem__(self, k, v):
+        """Annotates this file with a ``(k, v)`` pair, which will be
+        included in its JSON serialized form.
+
+        """
+        if k in {"location", "contentType", "contentLength", "metadata"}:
+            raise KeyError("Invalid key '{}'".format(k))
+        self._metadata[k] = v
 
     def __enter__(self):
         self._open()
