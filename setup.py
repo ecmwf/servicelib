@@ -26,15 +26,14 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
     ],
-    entry_points={
-        "console_scripts": ["servicelib-worker=servicelib.cmd.worker:main"],
-    },
+    entry_points={"console_scripts": ["servicelib-worker=servicelib.cmd.worker:main"],},
     extras_require={
         "docs": ["sphinx"],
         "tests": [
-            "coverage[toml]",
+            "coverage[toml]<5.0",
             "pyflakes",
             "pytest",
+            "pytest-cov",
             "pytest-lazy-fixture",
         ],
     },
