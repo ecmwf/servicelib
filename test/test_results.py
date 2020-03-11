@@ -34,6 +34,20 @@ def test_create_local_result(local_files_results):
     assert r.location.startswith("file:///")
 
 
+@pytest.mark.parametrize(
+    "content_type,expected_ext",
+    [
+        ("application/x-netcdf", ".nc"),
+        ("application/x-bufr", ".bufr"),
+        ("application/x-grib", ".grib"),
+        ("application/x-odb", ".odb"),
+    ],
+)
+def test_results_extension(local_files_results, content_type, expected_ext):
+    r = local_files_results.create(content_type)
+    assert r.path.suffix == expected_ext
+
+
 @pytest.fixture
 def http_files_results(request, monkeypatch, tmp_path):
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "http-files"))

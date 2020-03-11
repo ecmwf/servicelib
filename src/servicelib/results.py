@@ -146,11 +146,14 @@ class LocalFileResult(Result):
 
 
 def extension_for(content_type):
-    if content_type == "text/plain":
-        return ".txt"
-
     if content_type == "application/postscript":
         return ".ps"
+
+    if content_type == "application/x-netcdf":
+        return ".nc"
+
+    if content_type == "text/plain":
+        return ".txt"
 
     ret = mimetypes.guess_extension(content_type)
     if ret is None:
