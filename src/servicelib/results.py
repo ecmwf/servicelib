@@ -245,14 +245,20 @@ class HttpFileResults(LocalFileResults):
     def __init__(self):
         super(HttpFileResults, self).__init__()
         host = config.get("results_http_hostname", default=socket.getfqdn())
+
+        k = "results_http_port"
         try:
-            k = "results_http_port"
             port = config.get(k)
+        except Exception:
+            # Assume results are exposed through uWSGI as well.
+            k = "worker_port"
+            port = config.get(k)
+
+        try:
             port = int(port)
-        except KeyError as exc:
-            raise Exception("Missing config variable: {}".format(exc.args[0]))
         except ValueError as exc:
             raise Exception("Invalid config variable {}={}: {}".format(k, port, exc))
+
         self.netloc = "{}:{}".format(host, port)
 
     def create(self, content_type):
