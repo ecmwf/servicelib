@@ -99,3 +99,11 @@ def test_invalid_size_result_as_local_file(local_results):
 def test_invalid_path_result_as_local_file(local_results):
     res = local_results.as_local_file({"location": "/etc/passwd", "contentLength": 42})
     assert res is None
+
+
+def test_results_metadata(local_results):
+    r = local_results.create("text/plain")
+    r["foo"] = 42
+    r["bar"] = "43"
+    assert r.as_dict()["foo"] == 42
+    assert r.as_dict()["bar"] == "43"
