@@ -34,10 +34,18 @@ def main():
         for dname in serve_results.split(":"):
             cmd.extend(["--static-map", "{}={}".format(dname, dname)])
 
-    swagger_yaml = Path("/code/services/swagger.yaml")
+    swagger_yaml = Path(
+        config.get("worker_services_dir", default="/code/services"), "swagger.yaml"
+    )
     if swagger_yaml.exists():
-        cmd.extend(["--static-map", "/docs/=/usr/share/nginx/html/"])
         cmd.extend(["--static-map", "/services/swagger.yaml={}".format(swagger_yaml)])
+
+    swagger_ui = Path(
+        config.get("worker_swagger_ui_path", default="/usr/share/nginx/html")
+    )
+    if swagger_yaml.exists():
+        cmd.extend(["--static-map", "/docs={}".format(swagger_ui)])
+        cmd.extend(["--static-index", "index.html"])
 
     cmd.append(
         config.get(

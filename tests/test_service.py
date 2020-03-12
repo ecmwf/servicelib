@@ -118,3 +118,15 @@ def test_stats_endpoint(worker):
     res = worker.http_get("/stats")
     assert res.status_code == 200
     assert res.json()
+
+
+def test_swagger_yaml_endpoint(worker):
+    res = worker.http_get("/services/swagger.yaml")
+    assert res.status_code == 200
+    assert "A dummy OpenAPI definitions file" in res.content.decode("utf-8")
+
+
+def test_swagger_ui_endpoint(worker):
+    res = worker.http_get("/docs")
+    assert res.status_code == 200
+    assert "A placeholder for the real Swagger UI"

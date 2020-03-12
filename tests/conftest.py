@@ -59,6 +59,7 @@ SERVICELIB_INI_TEMPLATE = """
 [worker]
 serve_results = {scratch_dir}
 services_dir = {services_dir}
+swagger_ui_path = {services_dir}/swagger-ui
 uwsgi_config_file = {uwsgi_config_file}
 
 [inventory]
