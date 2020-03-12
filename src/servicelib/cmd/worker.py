@@ -47,6 +47,13 @@ def main():
         cmd.extend(["--static-map", "/docs={}".format(swagger_ui)])
         cmd.extend(["--static-index", "index.html"])
 
+    try:
+        static_assets = config.get("worker_static_map")
+    except Exception:
+        pass
+    else:
+        cmd.extend(["--static-map", static_assets])
+
     cmd.append(
         config.get(
             "worker_uwsgi_config_file",
