@@ -122,3 +122,24 @@ def test_invalid_results_metadata(local_results, reserved_key, value):
     with pytest.raises(ValueError) as exc:
         r[reserved_key] = value
     assert str(exc.value) == "Invalid key '{}'".format(reserved_key)
+
+
+@pytest.fixture
+def cds_cache_results(request, monkeypatch, tmp_path):
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "cds-cache"))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CDS_STACK", "cds-pepe"))
+    # monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_PORT", "8080"))
+
+    dirs = [tmp_path / d for d in ("scratch01", "scratch02")]
+    for d in dirs:
+        d.mkdir()
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_RESULTS_DIRS", ":".join(str(d) for d in dirs))
+    )
+
+    return results.CDSCacheResults()
+
+
+def test_cds_cache_results(cds_cache_results):
+    r = cds_cache_results.create("application/postscript")
+    assert r.location.startswith("http://cds-pepe.copernicus-climate.eu/cache-")

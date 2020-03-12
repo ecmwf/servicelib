@@ -241,10 +241,26 @@ class HttpFileResult(LocalFileResult):
         return "http://{}{}".format(self._netloc, self._path)
 
 
+HOSTNAME_FQDN = socket.getfqdn()
+HOSTNAME_SHORT = HOSTNAME_FQDN.split(".")[0]
+
+
+class CDSCacheResult(LocalFileResult):
+    def __init__(self, path, content_type):
+        super(CDSCacheResult, self).__init__(path, content_type)
+        self._stack = config.get("results_cds_stack")
+
+    @property
+    def location(self):
+        return "http://{}.copernicus-climate.eu/cache-{}{}".format(
+            self._stack, HOSTNAME_SHORT, self._path
+        )
+
+
 class HttpFileResults(LocalFileResults):
     def __init__(self):
         super(HttpFileResults, self).__init__()
-        host = config.get("results_http_hostname", default=socket.getfqdn())
+        host = config.get("results_http_hostname", default=HOSTNAME_FQDN)
 
         k = "results_http_port"
         try:
@@ -267,9 +283,15 @@ class HttpFileResults(LocalFileResults):
         )
 
 
+class CDSCacheResults(LocalFileResults):
+    def create(self, content_type):
+        return CDSCacheResult(self.result_filename(content_type), content_type)
+
+
 _INSTANCE_MAP = {
-    "local-files": LocalFileResults,
+    "cds-cache": CDSCacheResults,
     "http-files": HttpFileResults,
+    "local-files": LocalFileResults,
 }
 
 
