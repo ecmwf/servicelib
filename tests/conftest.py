@@ -7,7 +7,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import os
 import shutil
@@ -19,7 +19,7 @@ import pytest
 import requests
 
 from servicelib import errors, logutils, utils
-from servicelib.compat import Path, open
+from servicelib.compat import Path, open, env_var
 
 
 __all__ = [
@@ -34,8 +34,10 @@ logutils.configure_logging()
 @pytest.fixture
 def servicelib_ini(request, monkeypatch):
     monkeypatch.setenv(
-        "SERVICELIB_CONFIG_FILE",
-        os.path.join(os.path.dirname(__file__), "sample-servicelib.ini"),
+        *env_var(
+            "SERVICELIB_CONFIG_FILE",
+            os.path.join(os.path.dirname(__file__), "sample-servicelib.ini"),
+        )
     )
 
 
