@@ -249,11 +249,17 @@ class CDSCacheResult(LocalFileResult):
     def __init__(self, path, content_type):
         super(CDSCacheResult, self).__init__(path, content_type)
         self._stack = config.get("results_cds_stack")
+        self._download_host = config.get("results_cds_download_host")
 
     @property
     def location(self):
-        return "http://{}.copernicus-climate.eu/cache-{}{}".format(
-            self._stack,
+        # return "http://{}.copernicus-climate.eu/cache-{}{}".format(
+        #     self._stack,
+        #     config.get("results_cds_hostname", default=HOSTNAME_SHORT),
+        #     self._path,
+        # )
+        return "http://{}/cache-{}{}".format(
+            self._download_host,
             config.get("results_cds_hostname", default=HOSTNAME_SHORT),
             self._path,
         )
