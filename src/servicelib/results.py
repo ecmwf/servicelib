@@ -253,7 +253,9 @@ class CDSCacheResult(LocalFileResult):
     @property
     def location(self):
         return "http://{}.copernicus-climate.eu/cache-{}{}".format(
-            self._stack, HOSTNAME_SHORT, self._path
+            self._stack,
+            config.get("results_cds_hostname", default=HOSTNAME_SHORT),
+            self._path,
         )
 
 
