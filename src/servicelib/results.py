@@ -146,6 +146,7 @@ class LocalFileResult(Result):
 
     def _close(self):
         self._file_obj.close()
+        os.chmod(self._path, 0o644)
 
     def _write(self, b):
         n = self._file_obj.write(b)
