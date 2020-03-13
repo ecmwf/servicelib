@@ -30,6 +30,9 @@ __all__ = [
 
 
 class Result(object):
+
+    log = logutils.get_logger(__name__)
+
     def __init__(self, content_type):
         self.content_type = content_type
         self._is_open = False
@@ -37,9 +40,6 @@ class Result(object):
         self._metadata = {}
 
     def as_dict(self):
-        if self._is_open:
-            raise Exception("{!r}: Still open".format(self))
-
         ret = {
             "location": self.location,
             "contentLength": self.length,
@@ -249,20 +249,13 @@ HOSTNAME_SHORT = HOSTNAME_FQDN.split(".")[0]
 class CDSCacheResult(LocalFileResult):
     def __init__(self, path, content_type):
         super(CDSCacheResult, self).__init__(path, content_type)
-        self._stack = config.get("results_cds_stack")
         self._download_host = config.get("results_cds_download_host")
+        self._path_prefix = config.get("results_cds_download_path_prefix").rstrip("/")
 
     @property
     def location(self):
-        # return "http://{}.copernicus-climate.eu/cache-{}{}".format(
-        #     self._stack,
-        #     config.get("results_cds_hostname", default=HOSTNAME_SHORT),
-        #     self._path,
-        # )
-        return "http://{}/cache-{}{}".format(
-            self._download_host,
-            config.get("results_cds_hostname", default=HOSTNAME_SHORT),
-            self._path,
+        return "http://{}{}{}".format(
+            self._download_host, self._path_prefix, self._path,
         )
 
 

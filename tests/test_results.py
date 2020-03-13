@@ -127,8 +127,14 @@ def test_invalid_results_metadata(local_results, reserved_key, value):
 @pytest.fixture
 def cds_cache_results(request, monkeypatch, tmp_path):
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "cds-cache"))
-    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CDS_STACK", "cds-pepe"))
-    # monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_PORT", "8080"))
+    monkeypatch.setenv(
+        *env_var(
+            "SERVICELIB_RESULTS_CDS_DOWNLOAD_HOST", "some-host.copernicus-climate.eu"
+        )
+    )
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_RESULTS_CDS_DOWNLOAD_PATH_PREFIX", "/cache-compute-0000/")
+    )
 
     dirs = [tmp_path / d for d in ("scratch01", "scratch02")]
     for d in dirs:
@@ -142,4 +148,6 @@ def cds_cache_results(request, monkeypatch, tmp_path):
 
 def test_cds_cache_results(cds_cache_results):
     r = cds_cache_results.create("application/postscript")
-    assert r.location.startswith("http://cds-pepe.copernicus-climate.eu/cache-")
+    assert r.location.startswith(
+        "http://some-host.copernicus-climate.eu/cache-compute-0000"
+    )
