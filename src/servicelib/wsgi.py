@@ -11,6 +11,8 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import os
+
 import falcon
 
 from servicelib import config, inventory, logutils
@@ -40,3 +42,5 @@ application.add_route("/services/{service}", WorkerResource(services))
 application.add_route("/health", HealthResource())
 
 application.add_route("/stats", StatsResource())
+
+os.umask(0o22)
