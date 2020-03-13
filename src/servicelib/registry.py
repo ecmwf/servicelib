@@ -13,21 +13,42 @@ from __future__ import absolute_import, unicode_literals
 
 import socket
 import threading
-import time
+
+# import time
 
 import redis
 
 from servicelib import config, logutils
-from servicelib.compat import urlparse
+
+# from servicelib.compat import urlparse
 
 
 __all__ = [
-    "register_services",
-    "service_url",
-    "services_by_name",
-    "services_by_netloc",
-    "unregister_services",
+    "Registry",
+    "instance",
 ]
+
+
+class Registry(object):
+    def register(self, services):
+        raise NotImplementedError  # pragma: no cover
+
+    def unregister(self, services):
+        raise NotImplementedError  # pragma: no cover
+
+    # def service_url(self, name, local_only=False):
+    #     raise NotImplementedError
+
+    def service_url(self, name):
+        raise NotImplementedError  # pragma: no cover
+
+
+class NoOpRegistry(Registry):
+    def register(self, services):
+        pass
+
+    def unregister(self, services):
+        pass
 
 
 class RedisPool(object):
@@ -51,103 +72,131 @@ class RedisPool(object):
         return redis.Redis(connection_pool=self.pool)
 
 
-_redis_pool = RedisPool()
-
-_redis_key_prefix = "servicelib.url."
+HOSTNAME = socket.getfqdn()
 
 
-def redis_key(service_name):
-    return "{}{}".format(_redis_key_prefix, service_name)
+class RedisRegistry(Registry):
+
+    _redis_key_prefix = "servicelib.url.".encode("utf-8")
+
+    log = logutils.get_logger(__name__)
+
+    def __init__(self):
+        super(RedisRegistry, self).__init__()
+        self._pool = RedisPool()
+
+    def register(self, services):
+        p = self._pool.connection().pipeline()
+        for (name, url) in services:
+            k = self.redis_key(name)
+            self.log.info("Registering service %s at %s", name, url)
+            p.sadd(k, url.encode("utf-8"))
+        p.execute()
+
+    def unregister(self, services):
+        p = self._pool.connection().pipeline()
+        for (name, url) in services:
+            k = self.redis_key(name)
+            self.log.info("Unregistering service %s at %s", name, url)
+            p.srem(k, url)
+        p.execute()
+
+    # def service_url(self, name, local_only=False):
+    def service_url(self, name):
+        # TODO: Cache results.
+        c = self._pool.connection()
+        k = self.redis_key(name)
+
+        # url = None
+        # if local_only:
+        #     for parsed, unparsed in [(urlparse(u), u) for u in c.smembers(k)]:
+        #         if parsed.netloc.split(":")[0] == HOSTNAME:
+        #             url = unparsed
+        #             break
+        # else:
+        #     url = c.srandmember(k)
+        url = c.srandmember(k)
+
+        if url is None:
+            # raise Exception(
+            #     "No URL for service {} (local-only: {})".format(name, local_only)
+            # )
+            raise Exception("No URL for service {}".format(name))
+
+        return url.decode("utf-8")
+
+    def services_by_name(self):
+        ret = {}
+        c = self._pool.connection()
+        cur = 0
+        while True:
+            cur, keys = c.scan(cur)
+            self.log.debug("services_by_name(): keys: %s", keys)
+            for k in keys:
+                self.log.debug("services_by_name(): %s ?", k)
+                if k.startswith(self._redis_key_prefix):
+                    self.log.debug("services_by_name(): Yep: %s", k)
+                    ret.setdefault(
+                        k[len(self._redis_key_prefix) :].decode("utf-8"), set()
+                    )
+            if cur == 0:
+                break
+        self.log.debug("services_by_name(): ret: %s", ret)
+        for k, urls in ret.items():
+            for url in c.smembers(self.redis_key(k)):
+                urls.add(url.decode("utf-8"))
+        return ret
+
+    def redis_key(self, service_name):
+        return self._redis_key_prefix + service_name.encode("utf-8")
+
+
+_INSTANCE_MAP = {
+    "no-op": NoOpRegistry,
+    "redis": RedisRegistry,
+}
+
+
+def instance():
+    class_name = config.get("registry_class", default="no-op")
+    try:
+        ret = _INSTANCE_MAP[class_name]
+    except KeyError:
+        raise Exception("Invalid value for `registry_class`: {}".format(class_name))
+    if isinstance(ret, type):
+        _INSTANCE_MAP[class_name] = ret = ret()
+    return ret
 
 
 LOG = logutils.get_logger(__name__)
 
 
-def register_services(services):
-    p = _redis_pool.connection().pipeline()
-    for (name, url) in services:
-        k = redis_key(name)
-        LOG.info("Registering service %s at %s", name, url)
-        p.sadd(k, url)
-    p.execute()
+# class Cache(object):
+#     def __init__(self, ttl):
+#         self.ttl = ttl
+#         self._data = {}
+
+#     def get(self, k):
+#         v, expires = self._data[k]
+#         now = time.time()
+#         if now > expires:
+#             try:
+#                 del self._data[k]
+#             except KeyError:
+#                 pass
+#             raise KeyError(k)
+#         return v
+
+#     def put(self, k, v):
+#         self._data[k] = (v, time.time() + self.ttl)
 
 
-def unregister_services(services):
-    p = _redis_pool.connection().pipeline()
-    for (name, url) in services:
-        k = redis_key(name)
-        LOG.info("Unregistering service %s at %s", name, url)
-        p.srem(k, url)
-    p.execute()
+# _CACHE = Cache(int(config.get("registry_cache_ttl", default=5)))
 
 
-HOSTNAME = socket.getfqdn()
-
-
-class Cache(object):
-    def __init__(self, ttl):
-        self.ttl = ttl
-        self._data = {}
-
-    def get(self, k):
-        v, expires = self._data[k]
-        now = time.time()
-        if now > expires:
-            try:
-                del self._data[k]
-            except KeyError:
-                pass
-            raise KeyError(k)
-        return v
-
-    def put(self, k, v):
-        self._data[k] = (v, time.time() + self.ttl)
-
-
-_CACHE = Cache(int(config.get("registry_cache_ttl", default=5)))
-
-
-def service_url(name, local_only=False):
-    # TODO: Cache results.
-    c = _redis_pool.connection()
-    k = redis_key(name)
-
-    url = None
-    if local_only:
-        for parsed, unparsed in [(urlparse(u), u) for u in c.smembers(k)]:
-            if parsed.netloc.split(":")[0] == HOSTNAME:
-                url = unparsed
-                break
-    else:
-        url = c.srandmember(k)
-
-    if url is None:
-        raise Exception(
-            "No URL for service {} (local-only: {})".format(name, local_only)
-        )
-    return url
-
-
-def services_by_name():
-    ret = {}
-    c = _redis_pool.connection()
-    cur = 0
-    while True:
-        cur, keys = c.scan(cur)
-        if cur == 0:
-            break
-        for k in keys:
-            if k.startswith(_redis_key_prefix):
-                ret.setdefault(k[len(_redis_key_prefix) :], set())
-    for k, urls in ret.items():
-        for url in c.smembers(redis_key(k)):
-            urls.add(url)
-    return ret
-
-
-def services_by_netloc():
-    ret = {}
-    for service, urls in services_by_name().items():
-        for url in urls:
-            ret.setdefault(urlparse(url).netloc, set()).add(service)
-    return ret
+# def services_by_netloc():
+#     ret = {}
+#     for service, urls in services_by_name().items():
+#         for url in urls:
+#             ret.setdefault(urlparse(url).netloc, set()).add(service)
+#     return ret

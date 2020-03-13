@@ -28,6 +28,7 @@ class Context(object):
     def __init__(self, name, metadata=None):
         assert isinstance(name, compat.string_types)
         self._name = name
+        self._broker = None
 
         if metadata is None:
             self._metadata = Metadata(name)
@@ -47,11 +48,13 @@ class Context(object):
 
     @property
     def broker(self):
-        # XXX Put the ``import`` statement here in order to avoid a circular
+        # XXX Put the `import statement here in order to avoid a circular
         # import
         from servicelib.client import Broker
 
-        return Broker(self)
+        if self._broker is None:
+            self._broker = Broker(self)
+        return self._broker
 
     @property
     def name(self):

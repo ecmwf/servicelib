@@ -11,7 +11,6 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import atexit
 import importlib
 import os
 import socket
@@ -20,7 +19,6 @@ import psutil
 
 from servicelib import config, logutils
 from servicelib.compat import scandir
-from servicelib.registry import register_services, unregister_services
 from servicelib.service import service_instances
 
 
@@ -95,17 +93,6 @@ def service_url(service_name):
 class LegacyInventory(Inventory):
     def service_modules(self):
         raise NotImplementedError("Legacy `workers.yaml` loading not implemented")
-
-    def load_services(self):
-        services = super(LegacyInventory, self).load_services()
-
-        # Let the world know about the services hosted here.
-        register_services([(name, service_url(name)) for name in services])
-        atexit.register(
-            unregister_services, [(name, service_url(name)) for name in services],
-        )
-
-        return services
 
 
 class MetviewInventory(Inventory):

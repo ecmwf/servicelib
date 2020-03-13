@@ -104,12 +104,12 @@ class WorkerResource(object):
                 "Bad request (body: %s, headers: %s): %s", body, headers, exc
             )
             exc = errors.BadRequest(str(exc))
-            resp.status = exc.http_response_code
+            resp.status = str(exc.http_response_code)
             resp.data = json.dumps(exc.as_dict()).encode("utf-8")
             self.log.debug("Response body: %s", resp.data)
         else:
             svc_resp = svc._execute(svc_req)
-            resp.status = svc_resp.http_status
+            resp.status = str(svc_resp.http_status)
             resp.data = svc_resp.http_body
             for k, v in svc_resp.http_headers.items():
                 resp.append_header(k, v)

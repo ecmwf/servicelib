@@ -22,6 +22,7 @@ from servicelib.metadata import Metadata
 __all__ = [
     "Request",
     "Response",
+    "call_id",
     "is_valid_tracker",
     "tracker",
 ]
@@ -52,6 +53,10 @@ def is_valid_tracker(t):
         return _tracker_re.match(t) is not None
     except Exception:
         return False
+
+
+def call_id():
+    return make_id("call")
 
 
 class Request(object):
@@ -112,7 +117,7 @@ class Response(object):
     def http_status(self):
         if hasattr(self.value, "http_response_code"):
             return self.value.http_response_code
-        return "200 OK"
+        return 200
 
     @property
     def http_headers(self):
@@ -131,7 +136,7 @@ class Response(object):
     def from_http(cls, status, body, headers):
         cls.log.debug("from_http(status=%s, body=<%s>): Entering", status, body)
         body_decoded = json.loads(body)
-        if status.startswith("200 "):
+        if status == 200:
             value = body_decoded
         else:
             value = errors.Serializable.from_dict(body_decoded)
