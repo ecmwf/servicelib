@@ -10,8 +10,5 @@ source = ["servicelib"]
 [tool.coverage.paths]
 source = ["src", ".tox/*/site-packages"]
 
-[tool.coverage.report]
-show_missing = true
-
 [tool.black]
 line-length = 88

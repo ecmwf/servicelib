@@ -116,6 +116,26 @@ def test_serialize_roundtrip(error):
     assert err == error
 
 
+def test_deserialize_error_from_unknown_module():
+    ser = {
+        "exc_type": "pepe.Error",
+        "exc_service": "some-service",
+        "exc_origin": "somewhere",
+    }
+    err = errors.Serializable.from_dict(ser)
+    assert type(err) == errors.Serializable
+
+
+def test_deserialize_error_from_unknown_error():
+    ser = {
+        "exc_type": "servicelib.errors.Pepe",
+        "exc_service": "some-service",
+        "exc_origin": "somewhere",
+    }
+    err = errors.Serializable.from_dict(ser)
+    assert type(err) == errors.Serializable
+
+
 @pytest.mark.parametrize(
     "err, expected",
     [(errors.BadRequest("pepe"), "pepe"), (errors.BadRequest(None), "None"),],

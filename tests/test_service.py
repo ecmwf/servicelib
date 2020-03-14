@@ -129,4 +129,9 @@ def test_swagger_yaml_endpoint(worker):
 def test_swagger_ui_endpoint(worker):
     res = worker.http_get("/docs")
     assert res.status_code == 200
-    assert "A placeholder for the real Swagger UI"
+    assert "A placeholder for the real Swagger UI" in res.content.decode("utf-8")
+
+
+def test_extra_static_content_endpoint(worker):
+    res = worker.http_get("/services-source-code/README.md")
+    assert "Some sample files used in the test suite." in res.content.decode("utf-8")

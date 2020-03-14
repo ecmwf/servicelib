@@ -27,7 +27,7 @@ def main():
 
     autoreload = int(config.get("worker_autoreload", "0"))
     if autoreload > 0:
-        cmd.extend(["--py-autoreload", "{}".format(autoreload)])
+        cmd.extend(["--py-autoreload", "{}".format(autoreload)])  # pragma: no cover
 
     serve_results = config.get("worker_serve_results", default=None)
     if serve_results is not None:
@@ -47,11 +47,8 @@ def main():
         cmd.extend(["--static-map", "/docs={}".format(swagger_ui)])
         cmd.extend(["--static-index", "index.html"])
 
-    try:
-        static_assets = config.get("worker_static_map")
-    except Exception:
-        pass
-    else:
+    static_assets = config.get("worker_static_map", default=None)
+    if static_assets is not None:
         cmd.extend(["--static-map", static_assets])
 
     cmd.append(
@@ -78,14 +75,11 @@ def main():
     # before exec of uWSGI, so that we do not lose coverage info for this
     # Python module.
     if os.environ.get("COV_CORE_DATAFILE"):
-        try:
-            from pytest_cov.embed import cleanup
+        from pytest_cov.embed import cleanup
 
-            cleanup()
-        except Exception:  # pragma: no cover
-            pass
+        cleanup()
 
-    os.execlp(cmd[0], *cmd[0:])  # pragma: no cover
+    os.execlp(cmd[0], *cmd[0:])
 
 
 if __name__ == "__main__":

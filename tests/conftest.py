@@ -57,8 +57,10 @@ threads = 1
 
 SERVICELIB_INI_TEMPLATE = """
 [worker]
+port = {port}
 serve_results = {scratch_dir}
 services_dir = {services_dir}
+static_map = /services-source-code={services_dir}
 swagger_ui_path = {services_dir}/swagger-ui
 uwsgi_config_file = {uwsgi_config_file}
 
@@ -73,7 +75,7 @@ type = text
 class = http-files
 dirs = {scratch_dir}
 http_hostname = {host}
-http_port = {port}
+
 
 [scratch]
 strategy = random
