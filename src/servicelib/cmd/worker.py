@@ -71,9 +71,22 @@ def main():
     os.environ.setdefault("SERVICELIB_WORKER_PORT", config.get("worker_port", "8000"))
 
     log = logutils.get_logger("servicelib-worker")
+    log.info("Environment: %s", os.environ)
     log.info("Running: %s", " ".join(cmd))
-    os.execlp(cmd[0], *cmd[0:])
+
+    # If we're running under `pytest-cov`, call `pytest_cov.embed.cleanup()`
+    # before exec of uWSGI, so that we do not lose coverage info for this
+    # Python module.
+    if os.environ.get("COV_CORE_DATAFILE"):
+        try:
+            from pytest_cov.embed import cleanup
+
+            cleanup()
+        except Exception:  # pragma: no cover
+            pass
+
+    os.execlp(cmd[0], *cmd[0:])  # pragma: no cover
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main())  # pragma: no cover
