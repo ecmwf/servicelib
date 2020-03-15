@@ -74,15 +74,20 @@ class Result(object):
             close_exc = exc
         self._is_open = False
 
-        if exc_info is None and close_exc:
+        if exc_info == (None, None, None) and close_exc:
             raise close_exc
 
     def write(self, b):
         if not self._is_open:
             raise Exception("{!r}: Not open".format(self))
         n = self._write(b)
-        if n is None:
+
+        # XXX No way to test this case for both Python 2 an Python 3 until
+        # we have results implementations which are based on things other than
+        # local files.
+        if n is None:  # pragma: no cover
             return None
+
         self._length += n
         return n
 
@@ -146,7 +151,6 @@ class LocalFileResult(Result):
 
     def _close(self):
         self._file_obj.close()
-        os.chmod(self._path, 0o644)
 
     def _write(self, b):
         n = self._file_obj.write(b)

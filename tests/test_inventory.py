@@ -38,3 +38,10 @@ def test_load_services(default_inventory):
     services = default_inventory.load_services()
     assert services
     assert all(isinstance(i, ServiceInstance) for i in services.values())
+
+
+def test_invalid_iventory_factory(monkeypatch):
+    monkeypatch.setenv(*env_var("SERVICELIB_INVENTORY_CLASS", "no-such-impl"))
+    with pytest.raises(Exception) as exc:
+        inventory.instance()
+    assert str(exc.value) == "Invalid value for `inventory_class`: no-such-impl"

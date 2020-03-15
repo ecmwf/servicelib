@@ -63,7 +63,15 @@ class Serializable(Exception):
         except KeyError:
             exc_cls = cls
             cls.log.debug(
-                "Class '%s' not found in module '%s', deserializing as %s",
+                "Module '%s' not found for error '%s', deserializing as %s",
+                exc_module,
+                d["exc_type"],
+                exc_cls,
+            )
+        except AttributeError:
+            exc_cls = cls
+            cls.log.debug(
+                "Error '%s' not found in module '%s', deserializing as %s",
                 exc_name,
                 exc_module,
                 exc_cls,

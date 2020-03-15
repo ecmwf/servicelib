@@ -41,6 +41,7 @@ def test_create_local_result(local_files_results):
         ("application/x-bufr", ".bufr"),
         ("application/x-grib", ".grib"),
         ("application/x-odb", ".odb"),
+        ("unknown/content-type", ""),
     ],
 )
 def test_results_extension(local_files_results, content_type, expected_ext):
@@ -68,6 +69,28 @@ def test_create_http_result(http_files_results):
     assert r.location.startswith("http://")
 
 
+def test_http_results_port_defaults_to_worker_port(monkeypatch, tmp_path):
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_HOSTNAME", "localhost"))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", str(tmp_path / "wherever")))
+    monkeypatch.setenv(*env_var("SERVICELIB_WORKER_PORT", "42"))
+
+    r = results.HttpFileResults().create("text/plain")
+    assert r.location.startswith("http://localhost:42/")
+
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_PORT", "8000"))
+    r = results.HttpFileResults().create("text/plain")
+    assert r.location.startswith("http://localhost:8000/")
+
+
+def test_invalid_http_results_port(monkeypatch, tmp_path):
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_HOSTNAME", "localhost"))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", str(tmp_path / "wherever")))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_PORT", "pepe"))
+    with pytest.raises(Exception) as exc:
+        results.HttpFileResults()
+    assert str(exc.value).startswith("Invalid config variable results_http_port=pepe")
+
+
 @pytest.fixture(params=["local_files_results", "http_files_results"])
 def local_results(request):
     return pytest.lazy_fixture(request.param)
@@ -82,6 +105,30 @@ def test_write(local_results):
         n = r.write("45678".encode("utf-8"))
         assert n == 5
     assert r.length == 8
+
+
+def test_write_without_close(local_results):
+    r = local_results.create("text/plain")
+    with pytest.raises(Exception) as exc:
+        r.write("foo")
+    assert str(exc.value).endswith(": Not open")
+
+
+def test_error_in_closing_result(local_results):
+    r = local_results.create("text/plain")
+    with pytest.raises(Exception) as exc:
+        with r:
+            r._file_obj = None
+    assert str(exc.value) == "'NoneType' object has no attribute 'close'"
+
+
+def test_error_in_closing_result_does_not_hide_errors(local_results):
+    r = local_results.create("text/plain")
+    with pytest.raises(Exception) as exc:
+        with r:
+            r._file_obj = None
+            raise Exception("Boom!")
+    assert str(exc.value) == "Boom!"
 
 
 def test_result_as_local_file(local_results):
@@ -151,3 +198,10 @@ def test_cds_cache_results(cds_cache_results):
     assert r.location.startswith(
         "http://some-host.copernicus-climate.eu/cache-compute-0000"
     )
+
+
+def test_invalid_results_factory(monkeypatch):
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "no-such-impl"))
+    with pytest.raises(Exception) as exc:
+        results.instance()
+    assert str(exc.value) == "Invalid value for `results_class`: no-such-impl"

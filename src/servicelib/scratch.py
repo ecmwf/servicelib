@@ -28,10 +28,10 @@ __all__ = [
 
 class Scratch(object):
     def create_temp_file(self):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
     def as_local_file(self, result):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
 
 class DefaultScratch(Scratch):
@@ -83,7 +83,7 @@ class DefaultScratch(Scratch):
 
 class ScratchStrategy(object):
     def download_dir(self, dirs):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
 
 class Random(ScratchStrategy):
