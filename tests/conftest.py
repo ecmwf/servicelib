@@ -18,17 +18,49 @@ import tempfile
 import pytest
 import requests
 
-from servicelib import errors, logutils, utils
+from servicelib import client, errors, logutils, utils
+from servicelib.cache import instance as cache_instance
 from servicelib.compat import Path, open, env_var
 
 
 __all__ = [
+    "cache",
+    "broker",
     "servicelib_ini",
     "worker",
 ]
 
 
 logutils.configure_logging()
+
+
+@pytest.fixture(scope="function")
+def cache(request, monkeypatch):
+    monkeypatch.setenv(*env_var("SERVICELIB_CACHE_CLASS", "memcached"))
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_CACHE_MEMCACHED_ADDRESSES", "localhost:11211")
+    )
+    c = cache_instance()
+    c.flush()
+    try:
+        yield c
+    finally:
+        c.flush()
+
+
+@pytest.fixture
+def broker(request, cache, worker, monkeypatch):
+    monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_CLASS", "redis"))
+    monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_URL", "redis://localhost/0"))
+    b = client.Broker()
+    b.worker_info = {
+        "num_processes": worker.num_processes,
+        "num_threads": worker.num_threads,
+    }
+    try:
+        yield b
+    finally:
+        b.http_session.close()
 
 
 @pytest.fixture
@@ -73,6 +105,10 @@ class = default
 [registry]
 class = redis
 url = redis://localhost/0
+
+[cache]
+class = memcached
+memcached_addresses = localhost:11211
 
 [log]
 level = debug

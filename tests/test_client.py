@@ -21,21 +21,6 @@ from servicelib.compat import env_var
 from servicelib.timer import Timer
 
 
-@pytest.fixture
-def broker(request, worker, monkeypatch):
-    monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_CLASS", "redis"))
-    monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_URL", "redis://localhost/0"))
-    b = client.Broker()
-    b.worker_info = {
-        "num_processes": worker.num_processes,
-        "num_threads": worker.num_threads,
-    }
-    try:
-        yield b
-    finally:
-        b.http_session.close()
-
-
 def test_call(broker):
     """Calling services works.
 
