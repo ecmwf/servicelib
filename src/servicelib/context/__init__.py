@@ -48,7 +48,7 @@ class Context(object):
 
     @property
     def broker(self):
-        # XXX Put the `import statement here in order to avoid a circular
+        # XXX Put the `import` statement here in order to avoid a circular
         # import
         from servicelib.client import Broker
 
