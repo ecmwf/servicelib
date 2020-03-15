@@ -59,10 +59,7 @@ threads = {num_threads}
 
 SERVICELIB_INI_TEMPLATE = """
 [worker]
-<<<<<<< HEAD
-=======
 hostname = {host}
->>>>>>> ff82539... Servicelib client.
 port = {port}
 serve_results = {scratch_dir}
 services_dir = {services_dir}
