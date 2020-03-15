@@ -53,25 +53,11 @@ def req():
     }
 
 
-@pytest.fixture(scope="function")
-def cache(request, monkeypatch):
-    monkeypatch.setenv(*env_var("SERVICELIB_CACHE_CLASS", "memcached"))
-    monkeypatch.setenv(
-        *env_var("SERVICELIB_CACHE_MEMCACHED_ADDRESSES", "localhost:11211")
-    )
-    c = instance()
-    c.flush()
-    try:
-        yield c
-    finally:
-        c.flush()
-
-
 @pytest.mark.parametrize(
     "service",
     ["mock_preload", "mock_preload_long_ttl", "mock_retrieve", "mock_availability",],
 )
-def test_cache(broker, cache, service, req):
+def test_cache(broker, service, req):
     """Request caching works.
 
     """
@@ -87,7 +73,7 @@ def test_cache(broker, cache, service, req):
     assert cache_status(meta) == "miss"
 
 
-def test_ttl(broker, cache, req):
+def test_ttl(broker, req):
     """Cached requests expire.
 
     """
@@ -105,7 +91,7 @@ def test_ttl(broker, cache, req):
     assert cache_status(meta) == "miss"
 
 
-def test_inflight_requests(broker, cache, req):
+def test_inflight_requests(broker, req):
     """Not all simultaneous requests to a cached service are executed.
 
     """
@@ -121,7 +107,7 @@ def test_inflight_requests(broker, cache, req):
     assert len(hits) > len(misses)
 
 
-def test_bypass_cache(broker, cache, req):
+def test_bypass_cache(broker, req):
     """Cache might be bypassed.
 
     """
@@ -134,7 +120,7 @@ def test_bypass_cache(broker, cache, req):
 
 
 @pytest.mark.flaky(reruns=5)
-def test_cache_checks_url_validity(broker, cache, req):
+def test_cache_checks_url_validity(broker, req):
     res, meta = broker.execute("mock_retrieve", req).wait()
     assert cache_status(meta) == "miss"
 
