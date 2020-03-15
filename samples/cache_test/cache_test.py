@@ -22,6 +22,19 @@ def mock_preload(context, request):
     return {"preload": request}
 
 
+@cache_control(time=1)
+def mock_retrieve(context, request):
+    ret = []
+
+    for data in (b"field-1", b"field-2", b"field-3"):
+        res = context.create_result("application/x-grib")
+        with res:
+            res.write(data)
+        ret.append({"request": "whatever", "result": res})
+
+    return ret
+
+
 def main():
     from servicelib import service
 
@@ -31,4 +44,5 @@ def main():
             "name": "mock_preload_long_ttl",
             "execute": cache_control(time=86400)(mock_preload),
         },
+        {"name": "mock_retrieve", "execute": mock_retrieve},
     )

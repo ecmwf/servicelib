@@ -23,6 +23,11 @@ jobs:
           - 6379:6379
         options: --entrypoint redis-server
 
+      memcached:
+        image: memcached
+        ports:
+          - 11211:11211
+
     steps:
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v1"

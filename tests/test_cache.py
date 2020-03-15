@@ -11,12 +11,14 @@ from __future__ import absolute_import, unicode_literals
 
 """Unit tests for cache support."""
 
+import os
 import time
 
 import pytest
+import requests
 
 from servicelib.cache import instance
-from servicelib.compat import env_var
+from servicelib.compat import env_var, urlparse
 
 
 def cache_key(meta):
@@ -125,6 +127,34 @@ def test_bypass_cache(broker, cache, req):
 
     meta = broker.execute("mock_preload", req, cache=True).metadata
     assert cache_status(meta) in ("hit", "miss")
+
+
+def test_cache_checks_url_validity(broker, req):
+    res, meta = broker.execute("mock_retrieve", req).wait()
+    assert cache_status(meta) == "miss"
+
+    meta = broker.execute("mock_retrieve", req).metadata
+    assert cache_status(meta) == "hit"
+
+    first_result_url = res[0]["result"]["location"]
+    path = urlparse(first_result_url).path
+    os.unlink(path)
+    assert requests.head(first_result_url).status_code == 404
+
+    res, meta = broker.execute("mock_retrieve", req).wait()
+    assert cache_status(meta) == "miss"
+
+    first_result_url = res[0]["result"]["location"]
+    path = urlparse(first_result_url).path
+    with open(path, "wb") as f:
+        f.write(b"make file size not match cached value")
+    assert requests.head(first_result_url).status_code == 200
+    assert os.stat(path).st_size != res[0]["result"]["contentLength"]
+    meta = broker.execute("mock_retrieve", req).metadata
+    assert cache_status(meta) == "miss"
+
+    meta = broker.execute("mock_retrieve", req).metadata
+    assert cache_status(meta) == "hit"
 
 
 def test_get_response(broker, cache, req):

@@ -310,6 +310,12 @@ def valid_url(context, data):
         if "contentLength" in data:
             cached_length = int(data["contentLength"])
             remote_length = int(res.headers["content-length"])
+            context.log.debug(
+                "valid_url(%s): Checking content length (cached: %s, actual: %s)",
+                url,
+                cached_length,
+                remote_length,
+            )
             if cached_length != remote_length:
                 raise Exception(
                     "Invalid url {}, size mismatch: cache: {}, actual: {}".format(
