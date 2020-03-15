@@ -296,7 +296,7 @@ def valid_url(context, data):
 
     # If we're here, we assume `data` is a dict.
     if "location" not in data:
-        # Check in the dict values for `{url: xxx}` objects.
+        # Check in the dict values for `{location: xxx}` objects.
         for v in data.values():
             if not valid_url(context, v):
                 return False
@@ -327,14 +327,3 @@ def valid_url(context, data):
         return False
 
     return True
-
-
-# def memcached_client():
-#     return memcache.Client(default.lookup("memcached_daemons", group="services"))
-
-
-# def flush():
-#     """Clears all cached results.
-
-#     """
-#     memcached_client().flush_all()
