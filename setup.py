@@ -41,6 +41,7 @@ setup(
             "pytest-console-scripts",
             "pytest-cov",
             "pytest-lazy-fixture",
+            "pytest-rerunfailures",
         ],
     },
     include_package_data=True,

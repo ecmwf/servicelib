@@ -35,6 +35,11 @@ def mock_retrieve(context, request):
     return ret
 
 
+@cache_control(time=1)
+def mock_availability(context, request):
+    return None
+
+
 def main():
     from servicelib import service
 
@@ -45,4 +50,5 @@ def main():
             "execute": cache_control(time=86400)(mock_preload),
         },
         {"name": "mock_retrieve", "execute": mock_retrieve},
+        {"name": "mock_availability", "execute": mock_availability},
     )

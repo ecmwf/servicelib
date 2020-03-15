@@ -67,19 +67,23 @@ def cache(request, monkeypatch):
         c.flush()
 
 
-def test_cache(broker, cache, req):
+@pytest.mark.parametrize(
+    "service",
+    ["mock_preload", "mock_preload_long_ttl", "mock_retrieve", "mock_availability",],
+)
+def test_cache(broker, cache, service, req):
     """Request caching works.
 
     """
-    res, meta = broker.execute("mock_preload", req, cache=True).wait()
+    res, meta = broker.execute(service, req, cache=True).wait()
     assert cache_status(meta) == "miss"
 
-    new_res, meta = broker.execute("mock_preload", req, cache=True).wait()
+    new_res, meta = broker.execute(service, req, cache=True).wait()
     assert cache_status(meta) == "hit"
     assert new_res == res
 
     req["another_field"] = 42
-    meta = broker.execute("mock_preload", req, cache=True).metadata
+    meta = broker.execute(service, req, cache=True).metadata
     assert cache_status(meta) == "miss"
 
 
@@ -129,7 +133,8 @@ def test_bypass_cache(broker, cache, req):
     assert cache_status(meta) in ("hit", "miss")
 
 
-def test_cache_checks_url_validity(broker, req):
+@pytest.mark.flaky(reruns=5)
+def test_cache_checks_url_validity(broker, cache, req):
     res, meta = broker.execute("mock_retrieve", req).wait()
     assert cache_status(meta) == "miss"
 
