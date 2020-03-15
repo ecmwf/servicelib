@@ -7,7 +7,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import os
 import shutil
@@ -19,7 +19,7 @@ import pytest
 import requests
 
 from servicelib import errors, logutils, utils
-from servicelib.compat import Path, open
+from servicelib.compat import Path, open, env_var
 
 
 __all__ = [
@@ -34,8 +34,10 @@ logutils.configure_logging()
 @pytest.fixture
 def servicelib_ini(request, monkeypatch):
     monkeypatch.setenv(
-        "SERVICELIB_CONFIG_FILE",
-        os.path.join(os.path.dirname(__file__), "sample-servicelib.ini"),
+        *env_var(
+            "SERVICELIB_CONFIG_FILE",
+            str(Path(__file__, "..", "sample-servicelib.ini").resolve()),
+        )
     )
 
 
@@ -50,13 +52,14 @@ manage-script-name = true
 master = true
 module = servicelib.wsgi
 need-app = true
-processes = 2
+processes = {num_processes}
 safe-pidfile = {pid_file}
-threads = 1
+threads = {num_threads}
 """
 
 SERVICELIB_INI_TEMPLATE = """
 [worker]
+hostname = {host}
 port = {port}
 serve_results = {scratch_dir}
 services_dir = {services_dir}
@@ -66,6 +69,10 @@ uwsgi_config_file = {uwsgi_config_file}
 
 [inventory]
 class = default
+
+[registry]
+class = redis
+url = redis://localhost/0
 
 [log]
 level = debug
@@ -97,12 +104,26 @@ class Worker(object):
         self.host = "127.0.0.1"
         self.port = utils.available_port()
 
+        # Some tests in `tests/test_client.py` call service `proxy`, which
+        # calls other services. We need several uWSGI processes to be ready
+        # to accept requests.
+        self.num_processes = 4
+
+        # Set to 1 because we're assuming `servicelib` (and the services built
+        # upon it) are not thread-safe.
+        #
+        # We do want to set it explicitly to 1, so that Python's threading
+        # machinery gets initialised.
+        self.num_threads = 1
+
         servicelib_dir = Path(__file__, "..", "..").resolve()
         services_dir = servicelib_dir / "samples"
 
         self.uwsgi_ini = UWSGI_INI_TEMPLATE.format(
             host=self.host,
             log_file=log_file,
+            num_processes=self.num_processes,
+            num_threads=self.num_threads,
             pid_file=pid_file,
             port=self.port,
             services_dir=services_dir,
@@ -126,7 +147,7 @@ class Worker(object):
         env = dict(os.environ)
         env["SERVICELIB_CONFIG_FILE"] = str(self.servicelib_ini_file)
         subprocess.Popen("servicelib-worker", shell=True, env=env).wait()
-        utils.wait_for_port_open(self.port, self.host)
+        utils.wait_for_url("http://{}:{}/health".format(self.host, self.port))
         return self
 
     def __exit__(self, *exc_info):

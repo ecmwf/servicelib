@@ -24,7 +24,7 @@ from servicelib.compat import PY2, raise_from, urlparse
 __all__ = [
     "available_port",
     "download",
-    "wait_for_port_open",
+    "wait_for_url",
 ]
 
 
@@ -71,27 +71,21 @@ def download(result, path):
     os.rename(tmp_fname, path)
 
 
-def is_port_open(port, host=None):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if host is None:
-        hosts = ("localhost", "127.0.0.1")
-    else:
-        hosts = (host,)
-    for host in hosts:
-        try:
-            sock.connect((host, port))
-            sock.close()
-            return True
-        except Exception:
-            pass
+def wait_for_url(url, timeout=5.0):
+    """Blocks until the given URL is accessible.
 
-
-def wait_for_port_open(port, host=None, timeout=5.0):
+    """
     start = time.time()
     while True:
-        if is_port_open(port, host=host):
+        try:
+            res = requests.get(url)
+            res.raise_for_status()
+        except Exception as exc:
+            elapsed = time.time() - start
+            if elapsed > timeout:
+                raise Exception(
+                    "URL {} not ready after {} s: {}".format(url, timeout, exc)
+                )
+        else:
             return
-        elapsed = time.time() - start
-        if elapsed > timeout:
-            raise Exception("Port %d not open after %g s" % (port, timeout))
         time.sleep(0.1)

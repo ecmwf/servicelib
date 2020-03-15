@@ -122,7 +122,7 @@ class ServiceError(Serializable):
 
     """Models an error raised by the `servicelib` internals."""
 
-    http_response_code = "500 Internal Server Error"
+    http_response_code = 500  # Internal Server Error
 
     def __init__(self, *args):
         super(ServiceError, self).__init__(*args)
@@ -142,7 +142,7 @@ class CommError(ServiceError):
 
     """
 
-    http_response_code = "503 Service Unavailable"
+    http_response_code = 503  # Service Unavailable
 
     retry = True
 
@@ -159,7 +159,7 @@ class Timeout(ServiceError):
 
     """
 
-    http_response_code = "503 Service Unavailable"
+    http_response_code = 503  # Service Unavailable
 
     retry = True
 
@@ -177,7 +177,7 @@ class BadRequest(ServiceError):
 
     """
 
-    http_response_code = "400 Bad Request"
+    http_response_code = 400  # Bad Request
 
     def __init__(self, message):
         super(BadRequest, self).__init__(message)
@@ -191,7 +191,7 @@ class RetryLater(ServiceError):
 
     """
 
-    http_response_code = "503 Service Unavailable"
+    http_response_code = 503  # Service Unavailable
 
     def __init__(self, message, delay):
         super(RetryLater, self).__init__(message, delay)
@@ -213,7 +213,7 @@ class TaskError(Serializable):
 
     """
 
-    http_response_code = "500 Internal Server Error"
+    http_response_code = 500  # Internal Server Error
 
     log = logutils.get_logger(__name__)
 
