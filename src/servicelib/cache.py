@@ -56,13 +56,13 @@ class cache_control(object):
 
             with context.timer("cache") as timer:
                 if context.name is not None:
-                    name = context.name
+                    service_name = context.name
                 else:
-                    name = f.func_name
-                    assert name
+                    service_name = f.func_name
+                    assert service_name
 
+                request = (service_name, args, list(kwargs.items()))
                 try:
-                    request = (name, args, list(kwargs.items()))
                     request_encoded = json.dumps(request, sort_keys=True).encode(
                         "utf-8"
                     )
@@ -228,7 +228,7 @@ class MemcachedCache(Cache):
     def __init__(self):
         super(MemcachedCache, self).__init__
         memcached_addresses = config.get("cache_memcached_addresses").split()
-        self.log.debug("Using memcached instances: %s", memcached_addresses)
+        self.log.info("Using memcached instances: %s", memcached_addresses)
         self._memcached = memcache.Client(memcached_addresses)
 
     def get(self, key):
