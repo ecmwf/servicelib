@@ -31,16 +31,16 @@ __all__ = [
 
 class Registry(object):
     def register(self, services):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
     def unregister(self, services):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
     # def service_url(self, name, local_only=False):
     #     raise NotImplementedError
 
     def service_url(self, name):
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
 
 class NoOpRegistry(Registry):

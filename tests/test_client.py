@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import json
 import pprint
 import threading
 import time
@@ -39,8 +40,14 @@ def test_call(broker):
     """Calling services works.
 
     """
-    res = broker.execute("dump_request", "foo", 42, 42.0).result
-    assert res["args"] == ["foo", 42, 42.0]
+    res = broker.execute("dump_request", "foo", 42, 42.0, None, True, False).result
+    assert res["args"] == ["foo", 42, 42.0, None, True, False]
+
+
+def test_call_with_non_serializable_arg(broker):
+    with pytest.raises(Exception) as exc:
+        broker.execute("echo", object())
+    assert str(exc.value).startswith("object in call")
 
 
 def test_call_with_error(broker):
@@ -193,3 +200,15 @@ def test_timeout_in_wait(broker):
 
     # The second one succeeds.
     res.wait(timeout)
+
+
+def test_command_line_script(worker, monkeypatch, script_runner):
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_CONFIG_FILE", str(worker.servicelib_ini_file))
+    )
+    r = script_runner.run("servicelib-client", "echo", '["foo",{"bar":42,"baz":true}]')
+    assert r.success
+    assert json.loads(r.stdout) == [["foo", {"bar": 42, "baz": True}]]
+
+    r = script_runner.run("servicelib-client", "no-such-service")
+    assert not r.success
