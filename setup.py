@@ -48,6 +48,7 @@ setup(
         "falcon",
         "psutil",
         "python-json-logger",
+        "python-memcached",
         "redis",
         "requests",
         "six",

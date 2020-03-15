@@ -14,16 +14,12 @@ import time
 
 from functools import wraps
 
-# import memcache
+import memcache
 import requests
-
-# import logutils
 
 from servicelib import config, logutils
 from servicelib.compat import string_types
 from servicelib import encoding as json
-
-# from servicelib.settings.client import default
 
 
 __all__ = [
@@ -45,7 +41,11 @@ class cache_control(object):
     def __init__(self, time=0, result_is_url=False):
         self.ttl = time
         self.result_is_url = result_is_url
-        self.cache = instance
+        self.cache = instance()
+        self.cache_check_frequency = float(
+            config.get("cache_check_frequency", default="0.1")
+        )
+        self.inflight_ttl = int(config.get("cache_inflight_ttl", default="60"))
 
     def __call__(self, f):
         @wraps(f)
@@ -62,14 +62,23 @@ class cache_control(object):
                     assert name
 
                 try:
-                    request = (name, args, kwargs.items())
-                    request_encoded = json.dumps(request, sort_keys=True)
+                    request = (name, args, list(kwargs.items()))
+                    request_encoded = json.dumps(request, sort_keys=True).encode(
+                        "utf-8"
+                    )
                     request_md5 = hashlib.md5(request_encoded).hexdigest()
 
                     status, response = self.state_loop(
                         context, request_md5, timer, f, args, kwargs
                     )
-                except Exception:
+                except Exception as exc:
+                    try:
+                        log = context.log
+                    except Exception:
+                        log = logutils.get_logger(__name__)
+                    log.warn(
+                        "cache_control: Error handling request: %s", exc, exc_info=True
+                    )
                     self.cache.delete(request_md5)
                     raise
 
@@ -117,10 +126,8 @@ class cache_control(object):
         # Wait until either that other request finishes (and return a
         # cache hit), or, if the other request vanishes (because it
         # has failed, for instance), return a cache miss.
-
-        cache_check_frequency = context.get("cache_check_frequency", default=0.1)
         while True:
-            time.sleep(cache_check_frequency)
+            time.sleep(self.cache_check_frequency)
 
             response = self.cache.get(request_md5)
 
@@ -145,8 +152,7 @@ class cache_control(object):
         #
         # Set the TTL of this entry to a reasonably low value, so that
         # others may retry it if we die while we're processing it.
-        inflight_ttl = context.get("cache_inflight_ttl", default=60)
-        self.cache.set(request_md5, IN_FLIGHT, time=inflight_ttl)
+        self.cache.set(request_md5, IN_FLIGHT, ttl=self.inflight_ttl)
 
         timer.stop()
         try:
@@ -192,6 +198,9 @@ class Cache(object):
         """
         ret = self.get(key)
         if ret is None or ret == IN_FLIGHT:
+            self.log.debug(
+                "get_response(%s): Got `%s` from cache, retuning `None`", key, ret
+            )
             return None
 
         try:
@@ -211,34 +220,55 @@ class Cache(object):
 
             return
 
+        self.log.debug("get_response(%s): Returning %s", key, ret)
         return ret
 
 
-class InMemoryCache(Cache):
+class MemcachedCache(Cache):
     def __init__(self):
-        super(Cache, self).__init__
-        self._values = {}
+        super(MemcachedCache, self).__init__
+        memcached_addresses = config.get("cache_memcached_addresses").split()
+        self.log.debug("Using memcached instances: %s", memcached_addresses)
+        self._memcached = memcache.Client(memcached_addresses)
 
-    def get(self, key, ttl):
-        raise NotImplementedError
+    def get(self, key):
+        return self._memcached.get(key)
 
-    def set(self, key, value):
-        raise NotImplementedError
+    def set(self, key, value, ttl):
+        self._memcached.set(key, value, time=ttl, noreply=False)
 
     def delete(self, key):
-        raise NotImplementedError
+        self._memcached.delete(key, noreply=False)
 
     def flush(self):
-        raise NotImplementedError
+        self._memcached.flush_all()
+
+
+class NoOpCache(Cache):
+
+    log = logutils.get_logger(__name__)
+
+    def get(self, key):
+        return None
+
+    def set(self, key, value, ttl):
+        pass
+
+    def delete(self, key):
+        pass
+
+    def flush(self):
+        pass
 
 
 _INSTANCE_MAP = {
-    "in-mmemory": InMemoryCache,
+    "memcached": MemcachedCache,
+    "no-op": NoOpCache,
 }
 
 
 def instance():
-    class_name = config.get("cache_class", default="in-memory")
+    class_name = config.get("cache_class", default="no-op")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
