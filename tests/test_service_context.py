@@ -61,11 +61,11 @@ def test_create_result(context):
 
 
 def test_spawn_process(context):
-    cmdline = ["df", "-h"]
+    cmdline = ["echo", "foo"]
 
     class p(process.Process):
         def __init__(self):
-            super(p, self).__init__("df", cmdline)
+            super(p, self).__init__("echo", cmdline)
 
         def results(self):
             return self.output.decode("utf-8")
