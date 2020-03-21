@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -e
+
+here="$(dirname "$0")"
+top_dir="$(cd "${here}"/.. && pwd)"
+
+scratch_dir="/tmp/servicelib-scratch"
+mkdir -p $scratch_dir
+
+env \
+  PATH="${top_dir}/.tox/py37/bin:$PATH" \
+  PYTHONPATH="${top_dir}/src:${top_dir}/samples" \
+  SERVICELIB_CONFIG_FILE="${here}/servicelib.ini" \
+  servicelib-client "$@"

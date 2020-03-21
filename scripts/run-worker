@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -e
+
+here="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1090
+. "${here}/lib.sh"
+
+top_dir="$(cd "${here}"/.. && pwd)"
+if [ ! -d "${top_dir}/.tox/py37" ] ; then
+  create_venv
+fi
+
+
+scratch_dir="/tmp/servicelib-scratch"
+mkdir -p $scratch_dir
+
+if [ -n "$1" ] ; then
+  services_dir="$1"
+else
+  services_dir="${top_dir}/samples"
+fi
+
+trap stop_aux_services EXIT
+
+start_aux_services
+
+worker_pythonpath="${top_dir}/src:${services_dir}"
+if [ -n "$PYTHONPATH" ] ; then
+  worker_pythonpath="${worker_pythonpath}:$PYTHONPATH"
+fi
+
+env \
+  PATH="${top_dir}/.tox/py37/bin:$PATH" \
+  PYTHONPATH="${worker_pythonpath}" \
+  SERVICELIB_CONFIG_FILE="${here}/servicelib.ini" \
+  SERVICELIB_RESULTS_DIRS="${scratch_dir}" \
+  SERVICELIB_SCRATCH_DIRS="${scratch_dir}" \
+  SERVICELIB_WORKER_SERVE_RESULTS="${scratch_dir}" \
+  SERVICELIB_WORKER_SERVICES_DIR="${services_dir}" \
+  servicelib-worker "$@"

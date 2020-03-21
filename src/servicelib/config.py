@@ -36,11 +36,8 @@ def get(key, default=NO_DEFAULT):
         except Exception:
             pass
         return ret
-    except KeyError as exc:
-        try:
-            LOG.debug("config(%s): Environment variable %s not found", key, exc.args[0])
-        except Exception:
-            pass
+    except KeyError:
+        pass
 
     try:
         ret = _from_config_file[key]
@@ -57,10 +54,6 @@ def get(key, default=NO_DEFAULT):
     try:
         with open(config_file, "rt") as f:
             p.read_file(f, config_file)
-        try:
-            LOG.debug("Loaded config file from %s", config_file)
-        except Exception:
-            pass
     except Exception as exc:
         try:
             LOG.warn(
@@ -76,9 +69,10 @@ def get(key, default=NO_DEFAULT):
                 if k == key:
                     try:
                         LOG.debug(
-                            "config(%s): Returning %s (from config file, not cached)",
+                            "config(%s): Returning %s (from config file %s, not cached)",
                             key,
                             v,
+                            config_file,
                         )
                     except Exception:
                         pass
