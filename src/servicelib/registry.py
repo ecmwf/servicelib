@@ -63,7 +63,7 @@ class RedisPool(object):
     def pool(self):
         with self._lock:
             if self._pool is None:
-                url = config.get("registry_url")
+                url = config.get("registry.url")
                 self._pool = redis.ConnectionPool.from_url(url)
                 self.log.debug("Initialized Redis connection pool for URL %s", url)
         return self._pool
@@ -158,11 +158,11 @@ _INSTANCE_MAP = {
 
 
 def instance():
-    class_name = config.get("registry_class", default="no-op")
+    class_name = config.get("registry.class", default="no-op")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
-        raise Exception("Invalid value for `registry_class`: {}".format(class_name))
+        raise Exception("Invalid value for `registry.class`: {}".format(class_name))
     if isinstance(ret, type):
         _INSTANCE_MAP[class_name] = ret = ret()
     return ret
@@ -191,7 +191,7 @@ LOG = logutils.get_logger(__name__)
 #         self._data[k] = (v, time.time() + self.ttl)
 
 
-# _CACHE = Cache(int(config.get("registry_cache_ttl", default=5)))
+# _CACHE = Cache(int(config.get("registry.cache_ttl", default=5)))
 
 
 # def services_by_netloc():

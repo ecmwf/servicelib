@@ -78,7 +78,7 @@ class DefaultScratch(Scratch):
 
     @property
     def scratch_dirs(self):
-        return config.get("scratch_dirs").split(":")
+        return config.get("scratch.dirs")
 
 
 class ScratchStrategy(object):
@@ -97,11 +97,11 @@ _INSTANCE_MAP = {
 
 
 def instance():
-    class_name = config.get("scratch_strategy", default="random")
+    class_name = config.get("scratch.strategy", default="random")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
-        raise Exception("Invalid value for `scratch_strategy`: {}".format(class_name))
+        raise Exception("Invalid value for `scratch.strategy`: {}".format(class_name))
     if isinstance(ret, type):
         _INSTANCE_MAP[class_name] = ret = DefaultScratch(ret())
     return ret

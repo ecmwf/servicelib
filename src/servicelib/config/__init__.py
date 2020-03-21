@@ -9,14 +9,6 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import pytest
+from .client import get
 
-from servicelib import scratch
-from servicelib.compat import env_var
-
-
-def test_invalid_strategy(monkeypatch):
-    monkeypatch.setenv(*env_var("SERVICELIB_SCRATCH_STRATEGY", "invalid-strategy"))
-    with pytest.raises(Exception) as exc:
-        scratch.instance()
-    assert str(exc.value) == "Invalid value for `scratch.strategy`: invalid-strategy"
+__all__ = ["get"]

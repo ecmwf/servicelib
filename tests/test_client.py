@@ -106,6 +106,7 @@ def test_nested_metadata(broker):
     assert len(top["kids"][0]["kids"]) == 0, pprint.pformat(top)
 
 
+@pytest.mark.flaky(reruns=5)
 def test_parallel_requests(broker):
     """All instances of services handle requests concurrently.
 
@@ -144,9 +145,9 @@ def test_timeout_in_call(broker):
 
 
 def test_default_timeout_in_call(broker):
-    default_timeout = client._DEFAULT_TIMEOUT
-    client._DEFAULT_TIMEOUT = 1
-    delay = client._DEFAULT_TIMEOUT + 0.5
+    default_timeout = client.get_default_timeout()
+    client.Result._default_timeout = 1
+    delay = client.Result._default_timeout + 0.5
 
     try:
         with Timer() as t:
@@ -154,9 +155,9 @@ def test_default_timeout_in_call(broker):
                 broker.execute("sleep", delay).result
         assert exc.value.args[0].endswith("/services/sleep")
         assert t.elapsed < delay
-        assert t.elapsed > client._DEFAULT_TIMEOUT
+        assert t.elapsed > client.Result._default_timeout
     finally:
-        client._DEFAULT_TIMEOUT = default_timeout
+        client.Result._default_timeout = default_timeout
 
 
 def test_invalid_timeout_in_call(broker):
@@ -189,7 +190,7 @@ def test_timeout_in_wait(broker):
 
 def test_command_line_script(worker, monkeypatch, script_runner):
     monkeypatch.setenv(
-        *env_var("SERVICELIB_CONFIG_FILE", str(worker.servicelib_ini_file))
+        *env_var("SERVICELIB_CONFIG_URL", str(worker.servicelib_yaml_file.as_uri()))
     )
     r = script_runner.run("servicelib-client", "echo", '["foo",{"bar":42,"baz":true}]')
     assert r.success

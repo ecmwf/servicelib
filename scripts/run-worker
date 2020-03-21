@@ -33,7 +33,7 @@ fi
 env \
   PATH="${top_dir}/.tox/py37/bin:$PATH" \
   PYTHONPATH="${worker_pythonpath}" \
-  SERVICELIB_CONFIG_FILE="${here}/servicelib.ini" \
+  SERVICELIB_CONFIG_URL="file://${here}/servicelib.yaml" \
   SERVICELIB_RESULTS_DIRS="${scratch_dir}" \
   SERVICELIB_SCRATCH_DIRS="${scratch_dir}" \
   SERVICELIB_WORKER_SERVE_RESULTS="${scratch_dir}" \

@@ -29,6 +29,8 @@ setup(
     entry_points={
         "console_scripts": [
             "servicelib-client=servicelib.cmd.client:main",
+            "servicelib-config-client=servicelib.cmd.config_client:main",
+            "servicelib-config-server=servicelib.cmd.config_server:main",
             "servicelib-worker=servicelib.cmd.worker:main",
         ],
     },
@@ -50,6 +52,7 @@ setup(
         "psutil",
         "python-json-logger",
         "python-memcached",
+        "pyyaml",
         "redis",
         "requests",
         "six",

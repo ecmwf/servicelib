@@ -60,8 +60,8 @@ class StatsResource(object):
 
         stats = {
             "config": {
-                "num_processes": int(config.get("worker_num_processes")),
-                "num_threads": int(config.get("worker_num_threads")),
+                "num_processes": int(config.get("worker.num_processes")),
+                "num_threads": int(config.get("worker.num_threads")),
                 "max_num_fds": nofile_soft,
             },
             "totals": {"cpu_percent": 0.0, "mem": {"rss": 0, "vms": 0,},},

@@ -43,9 +43,9 @@ class cache_control(object):
         self.result_is_url = result_is_url
         self.cache = instance()
         self.cache_check_frequency = float(
-            config.get("cache_check_frequency", default="0.1")
+            config.get("cache.check_frequency", default="0.1")
         )
-        self.inflight_ttl = int(config.get("cache_inflight_ttl", default="60"))
+        self.inflight_ttl = int(config.get("cache.inflight_ttl", default="60"))
 
     def __call__(self, f):
         @wraps(f)
@@ -227,7 +227,7 @@ class Cache(object):
 class MemcachedCache(Cache):
     def __init__(self):
         super(MemcachedCache, self).__init__
-        memcached_addresses = config.get("cache_memcached_addresses").split()
+        memcached_addresses = config.get("cache.memcached_addresses")
         self.log.info("Using memcached instances: %s", memcached_addresses)
         self._memcached = memcache.Client(memcached_addresses)
 
@@ -268,11 +268,11 @@ _INSTANCE_MAP = {
 
 
 def instance():
-    class_name = config.get("cache_class", default="no-op")
+    class_name = config.get("cache.class", default="no-op")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
-        raise Exception("Invalid value for `cache_class`: {}".format(class_name))
+        raise Exception("Invalid value for `cache.class`: {}".format(class_name))
     if isinstance(ret, type):
         _INSTANCE_MAP[class_name] = ret = ret()
     return ret

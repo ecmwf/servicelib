@@ -55,4 +55,4 @@ def test_invalid_registry_factory(monkeypatch):
     monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_CLASS", "no-such-impl"))
     with pytest.raises(Exception) as exc:
         registry.instance()
-    assert str(exc.value) == "Invalid value for `registry_class`: no-such-impl"
+    assert str(exc.value) == "Invalid value for `registry.class`: no-such-impl"

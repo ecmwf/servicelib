@@ -57,6 +57,7 @@ def req():
     "service",
     ["mock_preload", "mock_preload_long_ttl", "mock_retrieve", "mock_availability",],
 )
+@pytest.mark.flaky(reruns=5)
 def test_cache(broker, service, req):
     """Request caching works.
 
@@ -73,6 +74,7 @@ def test_cache(broker, service, req):
     assert cache_status(meta) == "miss"
 
 
+@pytest.mark.flaky(reruns=5)
 def test_ttl(broker, req):
     """Cached requests expire.
 
@@ -200,4 +202,4 @@ def test_invalid_cache_factory(monkeypatch):
     monkeypatch.setenv(*env_var("SERVICELIB_CACHE_CLASS", "no-such-impl"))
     with pytest.raises(Exception) as exc:
         instance()
-    assert str(exc.value) == "Invalid value for `cache_class`: no-such-impl"
+    assert str(exc.value) == "Invalid value for `cache.class`: no-such-impl"

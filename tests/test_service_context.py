@@ -10,6 +10,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+import json
 import subprocess
 
 import pytest
@@ -20,7 +21,7 @@ from servicelib.compat import env_var
 from servicelib.core import Request
 
 
-def test_trackers_vary_per_request(servicelib_ini):
+def test_trackers_vary_per_request(servicelib_yaml):
     c1 = ServiceContext("some-service", "/some/dir", None, Request())
     c2 = ServiceContext("some-service", "/some/dir", None, Request())
     assert c1.tracker != c2.tracker
@@ -34,7 +35,7 @@ def context(request, monkeypatch, tmp_path):
     scratch_dirs = [tmp_path / d for d in ("scratch01", "scratch02")]
     for d in scratch_dirs:
         d.mkdir()
-    scratch_dirs = ":".join(str(d) for d in scratch_dirs)
+    scratch_dirs = json.dumps([str(d) for d in scratch_dirs])
     monkeypatch.setenv(*env_var("SERVICELIB_SCRATCH_DIRS", scratch_dirs))
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "local-files"))
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", scratch_dirs))
