@@ -112,8 +112,8 @@ def test_parallel_requests(broker):
     """
     w = broker.worker_info
     num_calls = (w["num_processes"] * w["num_threads"]) + 1
-    delay = 1
-    overhead = 0.5
+    delay = 2
+    overhead = 1
 
     def sleep():
         broker.execute("sleep", delay).wait()
