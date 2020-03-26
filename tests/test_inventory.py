@@ -44,4 +44,4 @@ def test_invalid_inventory_factory(monkeypatch):
     monkeypatch.setenv(*env_var("SERVICELIB_INVENTORY_CLASS", "no-such-impl"))
     with pytest.raises(Exception) as exc:
         inventory.instance()
-    assert str(exc.value) == "Invalid value for `inventory_class`: no-such-impl"
+    assert str(exc.value) == "Invalid value for `inventory.class`: no-such-impl"

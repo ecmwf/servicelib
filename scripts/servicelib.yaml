@@ -1,0 +1,27 @@
+---
+worker:
+  autoreload: 1
+  hostname: 127.0.0.1
+  port: 8000
+
+inventory:
+  class: default
+
+registry:
+  class: redis
+  url: redis://localhost/0
+
+cache:
+  class: memcached
+  memcached_addresses:
+    - localhost:11211
+
+log:
+  level: debug
+  type: text
+
+results:
+  class: http-files
+
+scratch:
+  strategy: random

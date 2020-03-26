@@ -233,7 +233,7 @@ class LocalFileResults(Results):
 
     @property
     def result_dirs(self):
-        return config.get("results_dirs").split(":")
+        return config.get("results.dirs")
 
 
 class HttpFileResult(LocalFileResult):
@@ -253,8 +253,8 @@ HOSTNAME_SHORT = HOSTNAME_FQDN.split(".")[0]
 class CDSCacheResult(LocalFileResult):
     def __init__(self, path, content_type):
         super(CDSCacheResult, self).__init__(path, content_type)
-        self._download_host = config.get("results_cds_download_host")
-        self._path_prefix = config.get("results_cds_download_path_prefix").rstrip("/")
+        self._download_host = config.get("results.cds_download_host")
+        self._path_prefix = config.get("results.cds_download_path_prefix").rstrip("/")
 
     @property
     def location(self):
@@ -266,14 +266,14 @@ class CDSCacheResult(LocalFileResult):
 class HttpFileResults(LocalFileResults):
     def __init__(self):
         super(HttpFileResults, self).__init__()
-        host = config.get("results_http_hostname", default=HOSTNAME_FQDN)
+        host = config.get("results.http_hostname", default=HOSTNAME_FQDN)
 
-        k = "results_http_port"
+        k = "results.http_port"
         try:
             port = config.get(k)
         except Exception:
             # Assume results are exposed through uWSGI as well.
-            k = "worker_port"
+            k = "worker.port"
             port = config.get(k)
 
         try:
@@ -302,11 +302,11 @@ _INSTANCE_MAP = {
 
 
 def instance():
-    class_name = config.get("results_class", default="http-files")
+    class_name = config.get("results.class", default="http-files")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
-        raise Exception("Invalid value for `results_class`: {}".format(class_name))
+        raise Exception("Invalid value for `results.class`: {}".format(class_name))
     if isinstance(ret, type):
         _INSTANCE_MAP[class_name] = ret = ret()
     return ret

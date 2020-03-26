@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # (C) Copyright 2020- ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
@@ -18,54 +16,55 @@ import psutil
 
 from servicelib import config, logutils
 from servicelib.compat import Path
+from servicelib.config.client import env_var
 
 
 def main():
     logutils.configure_logging()
 
-    cmd = ["uwsgi"]
+    cmd = ["uwsgi", "--req-logger", "file:/dev/null"]
 
-    autoreload = int(config.get("worker_autoreload", "0"))
+    autoreload = int(config.get("worker.autoreload", "0"))
     if autoreload > 0:
         cmd.extend(["--py-autoreload", "{}".format(autoreload)])  # pragma: no cover
 
-    serve_results = config.get("worker_serve_results", default=None)
+    serve_results = config.get("worker.serve_results", default=None)
     if serve_results is not None:
         for dname in serve_results.split(":"):
             cmd.extend(["--static-map", "{}={}".format(dname, dname)])
 
     swagger_yaml = Path(
-        config.get("worker_services_dir", default="/code/services"), "swagger.yaml"
+        config.get("worker.services_dir", default="/code/services"), "swagger.yaml"
     )
     if swagger_yaml.exists():
         cmd.extend(["--static-map", "/services/swagger.yaml={}".format(swagger_yaml)])
 
     swagger_ui = Path(
-        config.get("worker_swagger_ui_path", default="/usr/share/nginx/html")
+        config.get("worker.swagger_ui_path", default="/usr/share/nginx/html")
     )
     if swagger_yaml.exists():
         cmd.extend(["--static-map", "/docs={}".format(swagger_ui)])
         cmd.extend(["--static-index", "index.html"])
 
-    static_assets = config.get("worker_static_map", default=None)
+    static_assets = config.get("worker.static_map", default=None)
     if static_assets is not None:
         cmd.extend(["--static-map", static_assets])
 
     cmd.append(
         config.get(
-            "worker_uwsgi_config_file",
-            default=str(Path(config.__file__, "..", "uwsgi.ini").resolve()),
+            "worker.uwsgi_config_file",
+            default=str(Path(logutils.__file__, "..", "uwsgi.ini").resolve()),
         )
     )
 
     os.environ.setdefault(
-        "SERVICELIB_WORKER_NUM_PROCESSES",
-        config.get("worker_num_processes", str(psutil.cpu_count())),
+        env_var("worker.num_processes"),
+        config.get("worker.num_processes", str(psutil.cpu_count())),
     )
     os.environ.setdefault(
-        "SERVICELIB_WORKER_NUM_THREADS", config.get("worker_num_threads", "1")
+        env_var("worker.num_threads"), str(config.get("worker.num_threads", 1))
     )
-    os.environ.setdefault("SERVICELIB_WORKER_PORT", config.get("worker_port", "8000"))
+    os.environ.setdefault(env_var("worker.port"), str(config.get("worker.port", 8000)))
 
     log = logutils.get_logger("servicelib-worker")
     log.info("Environment: %s", os.environ)

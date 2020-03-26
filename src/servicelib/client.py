@@ -57,16 +57,19 @@ def check_timeout(t):
     return t
 
 
-_DEFAULT_TIMEOUT = check_timeout(config.get("client_default_timeout", default=None))
+def get_default_timeout():
+    return config.get("client.default_timeout", default=None)
 
 
 class Result(object):
 
     log = logutils.get_logger(__name__)
 
+    _default_timeout = None
+
     def __init__(self, http_session, service, args, kwargs, context):
         self.http_session = http_session
-        self.timeout = check_timeout(kwargs.pop("timeout", _DEFAULT_TIMEOUT))
+        self.timeout = check_timeout(kwargs.pop("timeout", self.default_timeout))
         self.args = args
         self.kwargs = dict(kwargs)
         # local_only = self.kwargs.pop("local_only", False)
@@ -142,6 +145,12 @@ class Result(object):
 
     def __repr__(self):
         return "Result(%r, %r)" % (self.url, self.args,)
+
+    @property
+    def default_timeout(self):
+        if self.__class__._default_timeout is None:
+            self.__class__._default_timeout = get_default_timeout()
+        return self.__class__._default_timeout
 
 
 class Broker(object):

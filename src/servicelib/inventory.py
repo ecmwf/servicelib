@@ -51,7 +51,7 @@ class DefaultInventory(Inventory):
     def service_modules(self):
         ret = []
         for entry in scandir(
-            config.get("worker_services_dir", default="/code/services")
+            config.get("worker.services_dir", default="/code/services")
         ):
             if not entry.is_dir():
                 self.log.debug("Ignoring %s (not a directory)", entry.path)
@@ -70,8 +70,8 @@ class DefaultInventory(Inventory):
 
 
 def service_url(service_name):
-    host = config.get("worker_host", default=socket.getfqdn())
-    port = config.get("worker_port", "0")
+    host = config.get("worker.host", default=socket.getfqdn())
+    port = config.get("worker.port", "0")
     if port == "0":
         p = psutil.Process()
         for c in p.connections(kind="tcp"):
@@ -117,11 +117,11 @@ _INSTANCE_MAP = {
 
 
 def instance():
-    class_name = config.get("inventory_class", "default")
+    class_name = config.get("inventory.class", "default")
     try:
         ret = _INSTANCE_MAP[class_name]
     except KeyError:
-        raise Exception("Invalid value for `inventory_class`: {}".format(class_name))
+        raise Exception("Invalid value for `inventory.class`: {}".format(class_name))
     if isinstance(ret, type):
         _INSTANCE_MAP[class_name] = ret = ret()
     return ret

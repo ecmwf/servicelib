@@ -2,7 +2,7 @@
 
 set -e
 
-here="$(dirname "$0")"
+here="$(cd "$(dirname "$0")" && pwd)"
 top_dir="$(cd "${here}"/.. && pwd)"
 
 scratch_dir="/tmp/servicelib-scratch"
@@ -11,5 +11,5 @@ mkdir -p $scratch_dir
 env \
   PATH="${top_dir}/.tox/py37/bin:$PATH" \
   PYTHONPATH="${top_dir}/src:${top_dir}/samples" \
-  SERVICELIB_CONFIG_FILE="${here}/servicelib.ini" \
+  SERVICELIB_CONFIG_URL="file://${here}/servicelib.yaml" \
   servicelib-client "$@"

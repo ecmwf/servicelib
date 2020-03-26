@@ -9,6 +9,8 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 import pytest
 
 from servicelib import results
@@ -23,7 +25,7 @@ def local_files_results(request, monkeypatch, tmp_path):
     for d in dirs:
         d.mkdir()
     monkeypatch.setenv(
-        *env_var("SERVICELIB_RESULTS_DIRS", ":".join(str(d) for d in dirs))
+        *env_var("SERVICELIB_RESULTS_DIRS", json.dumps([str(d) for d in dirs]))
     )
 
     return results.LocalFileResults()
@@ -58,7 +60,7 @@ def http_files_results(request, monkeypatch, tmp_path):
     for d in dirs:
         d.mkdir()
     monkeypatch.setenv(
-        *env_var("SERVICELIB_RESULTS_DIRS", ":".join(str(d) for d in dirs))
+        *env_var("SERVICELIB_RESULTS_DIRS", json.dumps([str(d) for d in dirs]))
     )
 
     return results.HttpFileResults()
@@ -71,7 +73,9 @@ def test_create_http_result(http_files_results):
 
 def test_http_results_port_defaults_to_worker_port(monkeypatch, tmp_path):
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_HOSTNAME", "localhost"))
-    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", str(tmp_path / "wherever")))
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_RESULTS_DIRS", json.dumps([str(tmp_path / "wherever")]))
+    )
     monkeypatch.setenv(*env_var("SERVICELIB_WORKER_PORT", "42"))
 
     r = results.HttpFileResults().create("text/plain")
@@ -84,11 +88,13 @@ def test_http_results_port_defaults_to_worker_port(monkeypatch, tmp_path):
 
 def test_invalid_http_results_port(monkeypatch, tmp_path):
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_HOSTNAME", "localhost"))
-    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", str(tmp_path / "wherever")))
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_RESULTS_DIRS", json.dumps([str(tmp_path / "wherever")]))
+    )
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_HTTP_PORT", "pepe"))
     with pytest.raises(Exception) as exc:
         results.HttpFileResults()
-    assert str(exc.value).startswith("Invalid config variable results_http_port=pepe")
+    assert str(exc.value).startswith("Invalid config variable results.http_port=pepe")
 
 
 @pytest.fixture(params=["local_files_results", "http_files_results"])
@@ -187,7 +193,7 @@ def cds_cache_results(request, monkeypatch, tmp_path):
     for d in dirs:
         d.mkdir()
     monkeypatch.setenv(
-        *env_var("SERVICELIB_RESULTS_DIRS", ":".join(str(d) for d in dirs))
+        *env_var("SERVICELIB_RESULTS_DIRS", json.dumps([str(d) for d in dirs]))
     )
 
     return results.CDSCacheResults()
@@ -204,4 +210,4 @@ def test_invalid_results_factory(monkeypatch):
     monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "no-such-impl"))
     with pytest.raises(Exception) as exc:
         results.instance()
-    assert str(exc.value) == "Invalid value for `results_class`: no-such-impl"
+    assert str(exc.value) == "Invalid value for `results.class`: no-such-impl"

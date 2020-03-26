@@ -17,16 +17,19 @@ import tempfile
 
 import pytest
 import requests
+import yaml
 
 from servicelib import client, errors, logutils, utils
 from servicelib.cache import instance as cache_instance
 from servicelib.compat import Path, open, env_var
+from servicelib.config import client as config_client
 
 
 __all__ = [
     "cache",
+    "config_server",
     "broker",
-    "servicelib_ini",
+    "servicelib_yaml",
     "worker",
 ]
 
@@ -38,7 +41,7 @@ logutils.configure_logging()
 def cache(request, monkeypatch):
     monkeypatch.setenv(*env_var("SERVICELIB_CACHE_CLASS", "memcached"))
     monkeypatch.setenv(
-        *env_var("SERVICELIB_CACHE_MEMCACHED_ADDRESSES", "localhost:11211")
+        *env_var("SERVICELIB_CACHE_MEMCACHED_ADDRESSES", '["localhost:11211"]')
     )
     c = cache_instance()
     c.flush()
@@ -50,6 +53,9 @@ def cache(request, monkeypatch):
 
 @pytest.fixture
 def broker(request, cache, worker, monkeypatch):
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_CONFIG_URL", worker.servicelib_yaml_file.as_uri())
+    )
     monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_CLASS", "redis"))
     monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_URL", "redis://localhost/0"))
     b = client.Broker()
@@ -64,11 +70,11 @@ def broker(request, cache, worker, monkeypatch):
 
 
 @pytest.fixture
-def servicelib_ini(request, monkeypatch):
+def servicelib_yaml(request, monkeypatch):
     monkeypatch.setenv(
         *env_var(
-            "SERVICELIB_CONFIG_FILE",
-            str(Path(__file__, "..", "sample-servicelib.ini").resolve()),
+            "SERVICELIB_CONFIG_URL",
+            Path(__file__, "..", "sample-servicelib.yaml").resolve().as_uri(),
         )
     )
 
@@ -89,52 +95,15 @@ safe-pidfile = {pid_file}
 threads = {num_threads}
 """
 
-SERVICELIB_INI_TEMPLATE = """
-[worker]
-hostname = {host}
-port = {port}
-serve_results = {scratch_dir}
-services_dir = {services_dir}
-static_map = /services-source-code={services_dir}
-swagger_ui_path = {services_dir}/swagger-ui
-uwsgi_config_file = {uwsgi_config_file}
-
-[inventory]
-class = default
-
-[registry]
-class = redis
-url = redis://localhost/0
-
-[cache]
-class = memcached
-memcached_addresses = localhost:11211
-
-[log]
-level = debug
-type = text
-
-[results]
-class = http-files
-dirs = {scratch_dir}
-http_hostname = {host}
-
-
-[scratch]
-strategy = random
-dirs = {scratch_dir}
-
-"""
-
 
 class Worker(object):
 
     log = logutils.get_logger()
 
     def __init__(
-        self, uwsgi_ini_file, servicelib_ini_file, pid_file, log_file, scratch_dir
+        self, uwsgi_ini_file, servicelib_yaml_file, pid_file, log_file, scratch_dir
     ):
-        self.servicelib_ini_file = servicelib_ini_file
+        self.servicelib_yaml_file = servicelib_yaml_file
         self.pid_file = pid_file
         self.log_file = log_file
         self.host = "127.0.0.1"
@@ -152,8 +121,12 @@ class Worker(object):
         # machinery gets initialised.
         self.num_threads = 1
 
+        scratch_dir.mkdir(parents=True, exist_ok=True)
+
         servicelib_dir = Path(__file__, "..", "..").resolve()
-        services_dir = servicelib_dir / "samples"
+        services_dir = str(servicelib_dir / "samples")
+        scratch_dir = str(scratch_dir)
+        uwsgi_ini_file = str(uwsgi_ini_file)
 
         self.uwsgi_ini = UWSGI_INI_TEMPLATE.format(
             host=self.host,
@@ -167,21 +140,38 @@ class Worker(object):
         with open(uwsgi_ini_file, "wt") as f:
             f.write(self.uwsgi_ini)
 
-        self.servicelib_ini = SERVICELIB_INI_TEMPLATE.format(
-            host=self.host,
-            port=self.port,
-            scratch_dir=scratch_dir,
-            services_dir=services_dir,
-            uwsgi_config_file=uwsgi_ini_file,
-        )
-        with open(servicelib_ini_file, "wt") as f:
-            f.write(self.servicelib_ini)
-
-        scratch_dir.mkdir(parents=True, exist_ok=True)
+        self.servicelib_conf = {
+            "worker": {
+                "hostname": self.host,
+                "port": self.port,
+                "serve_results": scratch_dir,
+                "services_dir": services_dir,
+                "static_map": "/services-source-code={}".format(services_dir),
+                "swagger_ui_path": "{}/swagger-ui".format(services_dir),
+                "uwsgi_config_file": uwsgi_ini_file,
+            },
+            "inventory": {"class": "default",},
+            "registry": {"class": "redis", "url": "redis://localhost/0",},
+            "cache": {
+                "class": "memcached",
+                "memcached_addresses": ["localhost:11211"],
+            },
+            "log": {"level": "debug", "type": "text",},
+            "results": {
+                "class": "http-files",
+                "dirs": [scratch_dir],
+                "http_hostname": self.host,
+            },
+            "scratch": {"strategy": "random", "dirs": [scratch_dir],},
+        }
+        with open(servicelib_yaml_file, "wb") as f:
+            yaml.safe_dump(
+                self.servicelib_conf, f, encoding="utf-8", allow_unicode=True
+            )
 
     def __enter__(self):
         env = dict(os.environ)
-        env["SERVICELIB_CONFIG_FILE"] = str(self.servicelib_ini_file)
+        env["SERVICELIB_CONFIG_URL"] = self.servicelib_yaml_file.resolve().as_uri()
         subprocess.Popen("servicelib-worker", shell=True, env=env).wait()
         utils.wait_for_url("http://{}:{}/health".format(self.host, self.port))
         return self
@@ -228,7 +218,7 @@ def worker():
     try:
         with Worker(
             tmp_path / "uwsgi.ini",
-            tmp_path / "servicelib.ini",
+            tmp_path / "servicelib.yaml",
             tmp_path / "uwsgi.pid",
             tmp_path / "uwsgi.log",
             tmp_path / "scratch",
@@ -236,3 +226,92 @@ def worker():
             yield s
     finally:
         shutil.rmtree(str(tmp_path), ignore_errors=True)
+
+
+class ConfigServer:
+
+    log = logutils.get_logger()
+
+    def __init__(self, initial_config, config_file, pid_file, log_file):
+        self.initial_config = initial_config
+        self.config_file = config_file
+        self.pid_file = pid_file
+        self.log_file = log_file
+        self.port = utils.available_port()
+        self.read_only = False
+        self.client = config_client.instance(url=self.url)
+        self.client.poll_interval = 1
+        self.p = None
+
+    def start(self, background=True):
+        with open(self.config_file, "wb") as f:
+            yaml.safe_dump(self.initial_config, f, encoding="utf-8", allow_unicode=True)
+
+        cmdline = [
+            "servicelib-config-server",
+            "--port",
+            self.port,
+            "--log-file",
+            self.log_file,
+            "--config-file",
+            self.config_file,
+        ]
+        if background:
+            cmdline.extend(
+                ["--pid-file", self.pid_file,]
+            )
+        if self.read_only:
+            cmdline.append("--read-only")
+        cmdline = " ".join(str(c) for c in cmdline)
+
+        p = subprocess.Popen(cmdline, shell=True)
+        if background:
+            rc = p.wait()
+            if rc:
+                raise Exception("Error running {}".format(cmdline))
+        else:
+            self.p = p
+
+        utils.wait_for_url(self.client.url)
+
+    def stop(self):
+        try:
+            if self.p is not None:
+                self.p.terminate()
+                self.p.wait()
+            else:
+                with open(self.pid_file, "rt") as f:
+                    pid = int(f.read().strip())
+                os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+
+        try:
+            with open(self.log_file, "rt") as f:
+                self.log.debug("uwsgi.log:\n%s", f.read())
+        except Exception:
+            pass
+
+    @property
+    def url(self):
+        return "http://127.0.0.1:{}/settings".format(self.port)
+
+    def http_get(self, path, **kwargs):
+        return requests.get("http://127.0.0.1:{}{}".format(self.port, path), **kwargs)
+
+    def http_post(self, path, **kwargs):
+        return requests.post("http://127.0.0.1:{}{}".format(self.port, path), **kwargs)
+
+
+@pytest.fixture(scope="function")
+def config_server(request, tmp_path):
+    s = ConfigServer(
+        {},
+        tmp_path / "servicelib.yaml",
+        tmp_path / "config-server.pid",
+        tmp_path / "config-server.log",
+    )
+    try:
+        yield s
+    finally:
+        s.stop()
