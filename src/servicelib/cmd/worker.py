@@ -23,7 +23,7 @@ from servicelib.compat import Path
 def main():
     logutils.configure_logging()
 
-    cmd = ["uwsgi"]
+    cmd = ["uwsgi", "--req-logger", "file:/dev/null"]
 
     autoreload = int(config.get("worker_autoreload", "0"))
     if autoreload > 0:
