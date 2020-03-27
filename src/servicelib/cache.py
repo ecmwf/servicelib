@@ -77,7 +77,10 @@ class cache_control(object):
                     except Exception:
                         log = logutils.get_logger(__name__)
                     log.warn(
-                        "cache_control: Error handling request: %s", exc, exc_info=True
+                        "cache_control: Error handling request: %s",
+                        exc,
+                        exc_info=True,
+                        stack_info=True,
                     )
                     self.cache.delete(request_md5)
                     raise
@@ -212,6 +215,7 @@ class Cache(object):
                 key,
                 exc,
                 exc_info=True,
+                stack_info=True,
             )
 
             # There is no point in keeping this cached value if we cannot
@@ -323,7 +327,9 @@ def valid_url(context, data):
                     )
                 )
     except Exception as exc:
-        context.log.warn("valid_url(%s): Error: %s", url, exc, exc_info=True)
+        context.log.warn(
+            "valid_url(%s): Error: %s", url, exc, exc_info=True, stack_info=True
+        )
         return False
 
     return True

@@ -71,13 +71,18 @@ class ServiceInstance(object):
             except Exception as exc:
                 exc_type, _, exc_tb = sys.exc_info()
                 result = TaskError(self.name, exc_type, exc, exc_tb)
-                context.log.info("Error raised: %s", result, exc_info=True)
+                context.log.info(
+                    "Error raised: %s", result, exc_info=True, stack_info=True
+                )
             finally:
                 try:
                     context.cleanup()
                 except Exception as exc:
                     context.log.warn(
-                        "Error raised in context cleanup: %s", exc, exc_info=True
+                        "Error raised in context cleanup: %s",
+                        exc,
+                        exc_info=True,
+                        stack_info=True,
                     )
 
             context.metadata.stop()
@@ -166,6 +171,7 @@ def start_service(name=None, execute=None):
             raise Exception(
                 "Execution request handler not provided, and no default found",
                 exc_info=True,
+                stack_info=True,
             )
 
     start_services(

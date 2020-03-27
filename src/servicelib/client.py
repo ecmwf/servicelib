@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 import sys
 import threading
-import traceback
 
 import requests
 
@@ -111,7 +110,9 @@ class Result(object):
             self.log.debug("Got timeout error: %s", exc)
             res = errors.Timeout(self.url)
         except Exception as exc:
-            self.log.info("%r failed: %s", self, traceback.format_exc(), exc_info=True)
+            self.log.info(
+                "%r failed: %s", self, exc, exc_info=True, stack_info=True,
+            )
             res = exc
 
         res.metadata = self.context.metadata

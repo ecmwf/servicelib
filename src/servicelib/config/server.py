@@ -68,7 +68,7 @@ class ConfigServer(object):
                 self.save_config()
             except Exception as exc:
                 msg = "Cannot save config: {}".format(exc)
-                self.log.error(msg, exc_info=True)
+                self.log.error(msg, exc_info=True, stack_info=True)
                 self.config = old_config
                 resp.status = falcon.HTTP_500
                 resp.data = json.dumps(msg).encode("utf-8")
@@ -97,7 +97,7 @@ class ConfigServer(object):
             self.save_config()
         except Exception as exc:
             msg = "Cannot save config: {}".format(exc)
-            self.log.error(msg, exc_info=True)
+            self.log.error(msg, exc_info=True, stack_info=True)
             self.config = old_config
             resp.status = falcon.HTTP_500
             resp.data = json.dumps(msg).encode("utf-8")

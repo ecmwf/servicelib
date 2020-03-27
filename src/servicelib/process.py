@@ -51,7 +51,7 @@ class Process(object):
         try:
             self.cleanup()
         except Exception:
-            self.log.error("Error in `cleanup()`", exc_info=True)
+            self.log.error("Error in `cleanup()`", exc_info=True, stack_info=True)
 
         if rc or signal:
             cmdline = " ".join(self.cmdline)
@@ -59,7 +59,13 @@ class Process(object):
             try:
                 self.failed(rc, signal)
             except Exception:
-                self.log.error("Error in `failed(%s, %s)`", rc, signal, exc_info=True)
+                self.log.error(
+                    "Error in `failed(%s, %s)`",
+                    rc,
+                    signal,
+                    exc_info=True,
+                    stack_info=True,
+                )
 
             if signal:
                 raise Exception(

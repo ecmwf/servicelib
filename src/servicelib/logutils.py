@@ -17,6 +17,8 @@ import os
 
 import structlog
 
+from servicelib.compat import PY2
+
 
 __all__ = [
     "configure_logging",
@@ -52,13 +54,20 @@ def stdlib_log_config(level="DEBUG", log_format=DEFAULT_FORMAT, log_type="text")
     if log_type not in LOG_TYPES:
         raise ValueError("Invalid log type: {}".format(log_type))
 
+    if PY2:
+        unicode_processor = structlog.processors.UnicodeEncoder
+    else:
+        unicode_processor = structlog.processors.UnicodeDecoder
+
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
             structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            # structlog.processors.UnicodeEncoder(),
+            unicode_processor(),
             structlog.stdlib.render_to_log_kwargs,
         ],
         context_class=dict,
@@ -89,27 +98,16 @@ def stdlib_log_config(level="DEBUG", log_format=DEFAULT_FORMAT, log_type="text")
             }
         },
         "loggers": {
-            "PIL": {"handlers": ["console"], "level": "WARN", "propagate": False,},
-            "chardet": {"handlers": ["console"], "level": "INFO", "propagate": False,},
-            "django": {"handlers": ["console"], "level": "INFO", "propagate": False,},
-            "matplotlib": {
-                "handlers": ["console"],
-                "level": "INFO",
-                "propagate": False,
-            },
-            "newrelic": {"handlers": ["console"], "level": "WARN", "propagate": False,},
-            "requests": {"handlers": ["console"], "level": "WARN", "propagate": False,},
-            "selenium": {"handlers": ["console"], "level": "WARN", "propagate": False,},
-            "urllib3": {"handlers": ["console"], "level": "WARN", "propagate": False,},
+            "": {"handlers": ["console"], "level": level, "propagate": True,},
+            # "requests": {"handlers": ["console"], "level": "WARN", "propagate": False,},
         },
-        "root": {"handlers": ["console"], "level": level,},
     }
 
     return conf
 
 
 def get_logger(name=None):
-    system = os.environ.get("ECMWF_WREP_SYSTEM_NAME")
+    system = os.environ.get("SERVICELIB_LOG_SYSTEM_NAME")
     if system not in {None, ""}:
         logger = structlog.get_logger(name, system=system)
     else:

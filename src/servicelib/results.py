@@ -70,7 +70,9 @@ class Result(object):
         try:
             self._close()
         except Exception as exc:
-            self.log.warn("Error closing %r: %s", self, exc, exc_info=True)
+            self.log.warn(
+                "Error closing %r: %s", self, exc, exc_info=True, stack_info=True
+            )
             close_exc = exc
         self._is_open = False
 

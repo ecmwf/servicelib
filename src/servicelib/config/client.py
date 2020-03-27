@@ -126,9 +126,15 @@ class ConfigClient(object):
                         except ValueError:
                             pass
 
-                self.log.debug(
-                    "config(%s): Returning %s (from environment %s)", key, ret, env_k
-                )
+                try:
+                    self.log.debug(
+                        "config(%s): Returning %s (from environment %s)",
+                        key,
+                        ret,
+                        env_k,
+                    )
+                except Exception:
+                    pass
                 return ret
 
             exc_fetching_source = None
@@ -151,6 +157,7 @@ class ConfigClient(object):
                     self.url,
                     exc,
                     exc_info=True,
+                    stack_info=True,
                 )
                 exc_fetching_source = exc
 
@@ -250,7 +257,10 @@ class ConfigClient(object):
                     self._poll(only_once=True)
         except Exception as exc:
             self.log.warn(
-                "Call to _ensure_poller_thread() failed: %s", exc, exc_info=True
+                "Call to _ensure_poller_thread() failed: %s",
+                exc,
+                exc_info=True,
+                stack_info=True,
             )
 
     def _poll(self, only_once=False):
@@ -279,6 +289,7 @@ class ConfigClient(object):
                         self.url,
                         exc,
                         exc_info=True,
+                        stack_info=True,
                     )
                     values = self.__old_values
                 else:
