@@ -46,9 +46,6 @@ class Timer(object):
         now = time.time()
         self.elapsed += now - self._start
 
-    def reset(self):
-        self.elapsed = 0.0
-
     def __enter__(self):
         self.start()
         return self

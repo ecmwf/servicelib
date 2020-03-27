@@ -13,9 +13,6 @@ from __future__ import absolute_import, unicode_literals
 
 import importlib
 import os
-import socket
-
-import psutil
 
 from servicelib import config, logutils
 from servicelib.compat import scandir
@@ -69,27 +66,6 @@ class DefaultInventory(Inventory):
         return ret
 
 
-def service_url(service_name):
-    host = config.get("worker.host", default=socket.getfqdn())
-    port = config.get("worker.port", "0")
-    if port == "0":
-        p = psutil.Process()
-        for c in p.connections(kind="tcp"):
-            if c.status == psutil.CONN_LISTEN:
-                port = c.laddr.port
-                break
-        else:
-            raise Exception("Cannot determine listening port")
-        os.environ["SERVICELIB_WORKER_PORT"] = str(port)
-    else:
-        try:
-            port = int(port)
-        except Exception as exc:
-            raise ValueError("Invalid listening port {}: {}".format(port, exc))
-
-    return "http://{}:{}/services/{}".format(host, port, service_name)
-
-
 class LegacyInventory(Inventory):
     def service_modules(self):
         raise NotImplementedError("Legacy `workers.yaml` loading not implemented")
@@ -100,13 +76,9 @@ class MetviewInventory(Inventory):
         raise NotImplementedError("Metview services loading not implemented")
 
     def load_services(self):
-        services = super(LegacyInventory, self).load_services()
-
         # TODO: Write to a file in a well-known location the list of services
         # implemented by this worker
         raise NotImplementedError("Metview loading not implemented yet.")
-
-        return services
 
 
 _INSTANCE_MAP = {

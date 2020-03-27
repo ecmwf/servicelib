@@ -39,10 +39,6 @@ class Metadata(object):
         self._pid = os.getpid()
         self._stop = 0.0
 
-    @property
-    def name(self):
-        return self._name
-
     def annotate(self, key, value):
         if isinstance(value, compat.string_types) or isinstance(
             value, (int, float, list, dict, tuple)
@@ -57,9 +53,6 @@ class Metadata(object):
         if name not in self._timers:
             self._timers[name] = Timer()
         return self._timers[name]
-
-    def add_timer(self, *args):
-        pass
 
     def start(self):
         self._start = time.time()
@@ -138,26 +131,6 @@ class Metadata(object):
         if "stop" in d:
             ret._stop = d["stop"]
         return ret
-
-    def clear_timers(self):
-        self._start = 0
-        self._stop = 0
-        self._timers = {}
-        self._extra = {}
-
-    def update_timers(self, timers):
-        self._extra.update(timers.get("timers", {}))
-        if "start" in timers:
-            self._start = timers["start"]
-        if "stop" in timers:
-            self._stop = timers["stop"]
-
-    @property
-    def tracker(self):
-        try:
-            return self._notes["tracker"]
-        except KeyError:
-            return self._kids[0].tracker
 
     def __repr__(self):
         return (
