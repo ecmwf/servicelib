@@ -32,6 +32,9 @@ logutils.configure_logging(
     log_type=config.get("log.type", default="text"),
 )
 
+worker_hostname = config.get("worker.hostname", default=socket.getfqdn())
+worker_port = config.get("worker.port")
+
 services = inventory.instance().load_services()
 
 application = falcon.API(media_type=falcon.MEDIA_JSON)
@@ -39,8 +42,6 @@ application.add_route("/services/{service}", WorkerResource(services))
 
 # Now that routes for services have been set up, we may add the services we
 # host here to the service registry.
-worker_hostname = config.get("worker.hostname", default=socket.getfqdn())
-worker_port = config.get("worker.port")
 service_urls = [
     (name, "http://{}:{}/services/{}".format(worker_hostname, worker_port, name,),)
     for name in services

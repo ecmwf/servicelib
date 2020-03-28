@@ -9,12 +9,14 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import json
 import os
 
 import pytest
+import yaml
 
 from servicelib import inventory
-from servicelib.compat import env_var
+from servicelib.compat import env_var, open
 from servicelib.service import ServiceInstance
 
 
@@ -45,3 +47,73 @@ def test_invalid_inventory_factory(monkeypatch):
     with pytest.raises(Exception) as exc:
         inventory.instance()
     assert str(exc.value) == "Invalid value for `inventory.class`: no-such-impl"
+
+
+def test_legacy_inventory(legacy_workers):
+    w = legacy_workers.start("simple")
+    res = w.http_post(
+        "/services/dump_request",
+        data=json.dumps(["foo", 42]),
+        headers={"content-type": "application/json"},
+    )
+    assert res["args"] == ["foo", 42]
+
+    with pytest.raises(Exception) as exc:
+        w.http_post(
+            "/services/proxy",
+            data=json.dumps(["dump_request", "foo", 42]),
+            headers={"content-type": "application/json"},
+        )
+    assert "404" in str(exc.value)
+
+    w = legacy_workers.start("proxy")
+    res = w.http_post(
+        "/services/proxy",
+        data=json.dumps(["dump_request", "foo", 42]),
+        headers={"content-type": "application/json"},
+    )
+    assert res["args"] == ["foo", 42]
+
+    with pytest.raises(Exception) as exc:
+        w.http_post(
+            "/services/hello",
+            data=json.dumps(["world"]),
+            headers={"content-type": "application/json"},
+        )
+    assert "404" in str(exc.value)
+    w = legacy_workers.start("other")
+    res = w.http_post(
+        "/services/hello",
+        data=json.dumps(["world"]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == "Hello, world!"
+
+
+def test_change_runtime_config_in_legacy_inventory(
+    legacy_workers, monkeypatch, tmp_path
+):
+    w = legacy_workers.start("other")
+    res = w.http_post(
+        "/services/dump_config",
+        data=json.dumps([]),
+        headers={"content-type": "application/json"},
+    )
+    assert "foo" not in res
+    legacy_workers.stop("other")
+
+    runtime_config = {"foo": 42}
+    servicelib_yaml = tmp_path / "new-servicelib.yaml"
+    with open(servicelib_yaml, "wb") as f:
+        yaml.safe_dump(runtime_config, f, encoding="utf-8", allow_unicode=True)
+    monkeypatch.setenv(
+        *env_var("SERVICELIB_INVENTORY_RUNTIME_CONFIG_URL", servicelib_yaml.as_uri())
+    )
+
+    w = legacy_workers.start("other")
+    res = w.http_post(
+        "/services/dump_config",
+        data=json.dumps([]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == {"foo": 42}

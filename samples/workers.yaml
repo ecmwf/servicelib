@@ -1,0 +1,19 @@
+---
+
+# Sample legacy `workers.yaml` file.
+
+# Worker `proxy` contains the services of a single Python module.
+proxy:
+  services:
+    - proxy
+
+# Worker `simple` packs together all services in these two Python modules.
+simple:
+  services:
+    - dump_request
+    - echo
+
+# Worker `other` packs together all services from all other Python modules
+# found here which are not listed in the previous worker definitions.
+other:
+  services: []

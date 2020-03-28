@@ -29,6 +29,7 @@ __all__ = [
     "cache",
     "config_server",
     "broker",
+    "legacy_workers",
     "servicelib_yaml",
     "worker",
 ]
@@ -101,7 +102,14 @@ class Worker(object):
     log = logutils.get_logger()
 
     def __init__(
-        self, uwsgi_ini_file, servicelib_yaml_file, pid_file, log_file, scratch_dir
+        self,
+        uwsgi_ini_file,
+        servicelib_yaml_file,
+        pid_file,
+        log_file,
+        scratch_dir,
+        inventory,
+        registry_url,
     ):
         self.servicelib_yaml_file = servicelib_yaml_file
         self.pid_file = pid_file
@@ -150,8 +158,8 @@ class Worker(object):
                 "swagger_ui_path": "{}/swagger-ui".format(services_dir),
                 "uwsgi_config_file": uwsgi_ini_file,
             },
-            "inventory": {"class": "default",},
-            "registry": {"class": "redis", "url": "redis://localhost/0",},
+            "inventory": inventory,
+            "registry": {"class": "redis", "url": registry_url},
             "cache": {
                 "class": "memcached",
                 "memcached_addresses": ["localhost:11211"],
@@ -222,10 +230,55 @@ def worker():
             tmp_path / "uwsgi.pid",
             tmp_path / "uwsgi.log",
             tmp_path / "scratch",
+            inventory={"class": "default"},
+            registry_url="redis://localhost/0",
         ) as s:
             yield s
     finally:
         shutil.rmtree(str(tmp_path), ignore_errors=True)
+
+
+@pytest.fixture(scope="function")
+def legacy_workers(request, monkeypatch, tmp_path):
+    registry_url = "redis://localhost/12"
+    monkeypatch.setenv(*env_var("SERVICELIB_REGISTRY_URL", registry_url))
+
+    class Workers(object):
+        def __init__(self):
+            self._started_workers = {}
+
+        def start(self, worker_name):
+            worker_dir = tmp_path / worker_name
+            worker_dir.mkdir(exist_ok=True)
+            w = Worker(
+                worker_dir / "uwsgi.ini",
+                worker_dir / "servicelib.yaml",
+                worker_dir / "uwsgi.pid",
+                worker_dir / "uwsgi.log",
+                worker_dir / "scratch",
+                inventory={"class": "legacy", "worker_name": worker_name},
+                registry_url=registry_url,
+            )
+            w.__enter__()
+            self._started_workers[worker_name] = w
+            return w
+
+        def stop(self, worker_name):
+            try:
+                w = self._started_workers.pop(worker_name)
+            except KeyError:
+                return
+            w.__exit__()
+
+        def stop_all(self):
+            for w in self._started_workers.values():
+                w.__exit__()
+
+    workers = Workers()
+    try:
+        yield workers
+    finally:
+        workers.stop_all()
 
 
 class ConfigServer:
