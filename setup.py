@@ -7,8 +7,28 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import sys
+
 from setuptools import find_packages, setup
 
+
+install_requires = [
+    "falcon",
+    "psutil",
+    "python-json-logger",
+    "python-memcached",
+    "pyyaml",
+    "redis",
+    "requests",
+    "six",
+    "structlog",
+    "uwsgi",
+]
+
+if sys.version_info.major == 2:
+    install_requires.extend(
+        ["pathlib2", "scandir",]
+    )
 
 setup(
     name="servicelib",
@@ -47,18 +67,7 @@ setup(
         ],
     },
     include_package_data=True,
-    install_requires=[
-        "falcon",
-        "psutil",
-        "python-json-logger",
-        "python-memcached",
-        "pyyaml",
-        "redis",
-        "requests",
-        "six",
-        "structlog",
-        "uwsgi",
-    ],
+    install_requires=install_requires,
     license="Apache Software License",
     package_dir={"": "src",},
     packages=find_packages(where="src"),
