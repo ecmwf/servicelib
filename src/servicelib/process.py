@@ -34,18 +34,18 @@ class Process(object):
         pass
 
     def stdout_data(self, data):
-        if (
-            self.max_output_size == 0
-            or len(self.output) + len(data) <= self.max_output_size
-        ):
-            self.output.extend(data)
+        self._append_output(data)
 
     def stderr_data(self, data):
-        if (
-            self.max_output_size == 0
-            or len(self.output) + len(data) <= self.max_output_size
-        ):
+        self._append_output(data)
+
+    def _append_output(self, data):
+        if self.max_output_size == 0:
             self.output.extend(data)
+        else:
+            capacity = self.max_output_size - len(self.output)
+            if capacity > 0:
+                self.output.extend(data[:capacity])
 
     def process_ended(self, rc, signal):
         try:

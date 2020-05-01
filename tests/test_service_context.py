@@ -17,7 +17,7 @@ import pytest
 
 from servicelib import process
 from servicelib.context.service import ServiceContext
-from servicelib.compat import env_var
+from servicelib.compat import env_var, open
 from servicelib.core import Request
 
 
@@ -101,6 +101,72 @@ def test_spawn_failing_process(context):
     with pytest.raises(Exception) as exc:
         context.spawn_process(p())
     assert str(exc.value).startswith("'ls-root' failed, return code 2")
+
+
+def test_spawn_process_with_truncated_output(context, tmp_path):
+    zeroes = tmp_path / "zeroes"
+    cmdline = ["cat", str(zeroes)]
+
+    class p(process.Process):
+
+        max_output_size = 42
+
+        def __init__(self):
+            super(p, self).__init__("cat-zeroes", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+    with open(zeroes, "wb") as f:
+        f.write(("0" * p.max_output_size).encode("utf-8"))
+        f.write("and some extra data which will be truncated".encode("utf-8"))
+
+    res = context.spawn_process(p())
+    assert res == "0" * p.max_output_size
+
+
+def test_spawn_process_with_truncated_output_2(context, tmp_path):
+    foo_bar = tmp_path / "foo-bar"
+    cmdline = ["cat", str(foo_bar)]
+
+    # The newline in the output will trigger two calls to the process object's
+    # `stdout_data`, the first one of which fill fill the output capacity.
+    with open(foo_bar, "wb") as f:
+        f.write("foo\nbar".encode("utf-8"))
+
+    class p(process.Process):
+
+        max_output_size = 3
+
+        def __init__(self):
+            super(p, self).__init__("cat-foo-bar", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+    res = context.spawn_process(p())
+    assert res == "foo"
+
+
+def test_spawn_process_with_unlimited_output(context, tmp_path):
+    zeroes = tmp_path / "zeroes"
+    cmdline = ["cat", str(zeroes)]
+
+    class p(process.Process):
+
+        max_output_size = 0
+
+        def __init__(self):
+            super(p, self).__init__("cat-zeores", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+    with open(zeroes, "wb") as f:
+        f.write(("0" * process.DEFAULT_MAX_PROCESS_OUTPUT_SIZE).encode("utf-8"))
+
+    res = context.spawn_process(p())
+    assert res == "0" * zeroes.stat().st_size
 
 
 def test_get_data_downloads_only_once(context):
