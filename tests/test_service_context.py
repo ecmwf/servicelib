@@ -32,6 +32,13 @@ def test_temp_files_are_removed(context):
     assert not os.access(fname, os.F_OK)
 
 
+def test_handle_errors_in_temp_file_cleanup(context):
+    fname = context.create_temp_file()
+    os.unlink(fname)
+    context.cleanup()
+    assert not os.access(fname, os.F_OK)
+
+
 def test_create_result(context):
     r = context.create_result("text/plain").as_dict()
     assert "location" in r
