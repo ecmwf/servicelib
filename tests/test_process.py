@@ -214,3 +214,34 @@ def test_handle_cleanup_errors_in_spawn_process(context):
 
     res = context.spawn_process(p())
     assert res == subprocess.check_output(cmdline).decode("utf-8")
+
+
+STDERR_PY = r"""
+import sys
+
+sys.stdout.write("foo\n")
+sys.stdout.flush()
+sys.stderr.write("bar\n")
+sys.stderr.flush()
+sys.stdout.write("baz\n")
+sys.stdout.flush()
+"""
+
+
+def test_interleaved_output_in_spawn_process(context, tmp_path):
+    script = tmp_path / "script.py"
+    with open(script, "wt") as f:
+        f.write(STDERR_PY)
+
+    pid_file = tmp_path / "script.pid"
+    cmdline = [sys.executable, str(script), str(pid_file)]
+
+    class p(process.Process):
+        def __init__(self):
+            super(p, self).__init__("stderr", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+    res = context.spawn_process(p())
+    assert res == "foo\nbar\nbaz\n"

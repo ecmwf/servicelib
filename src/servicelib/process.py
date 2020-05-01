@@ -32,12 +32,6 @@ class Process(object):
         pass
 
     def stdout_data(self, data):
-        self._append_output(data)
-
-    def stderr_data(self, data):
-        self._append_output(data)
-
-    def _append_output(self, data):
         if self.max_output_size == 0:
             self.output.extend(data)
         else:
