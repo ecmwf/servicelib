@@ -10,6 +10,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+import json
 import shutil
 import signal
 import subprocess
@@ -21,13 +22,16 @@ import yaml
 
 from servicelib import client, errors, logutils, utils
 from servicelib.cache import instance as cache_instance
-from servicelib.compat import Path, open, env_var
+from servicelib.compat import Path, env_var, open
 from servicelib.config import client as config_client
+from servicelib.context.service import ServiceContext
+from servicelib.core import Request
 
 
 __all__ = [
     "cache",
     "config_server",
+    "context",
     "broker",
     "servicelib_yaml",
     "worker",
@@ -315,3 +319,19 @@ def config_server(request, tmp_path):
         yield s
     finally:
         s.stop()
+
+
+@pytest.fixture(scope="function")
+def context(request, monkeypatch, tmp_path):
+    home_dir = tmp_path / "service-home"
+    home_dir.mkdir()
+
+    scratch_dirs = [tmp_path / d for d in ("scratch01", "scratch02")]
+    for d in scratch_dirs:
+        d.mkdir()
+    scratch_dirs = json.dumps([str(d) for d in scratch_dirs])
+    monkeypatch.setenv(*env_var("SERVICELIB_SCRATCH_DIRS", scratch_dirs))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_CLASS", "local-files"))
+    monkeypatch.setenv(*env_var("SERVICELIB_RESULTS_DIRS", scratch_dirs))
+
+    return ServiceContext("some-service", str(home_dir), None, Request())
