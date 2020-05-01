@@ -9,8 +9,6 @@
 
 from __future__ import absolute_import, unicode_literals
 
-from servicelib import logutils
-
 
 # Maximum number of output from process (both `stdout` and `stderr`)
 # to be kept.
@@ -97,7 +95,4 @@ class Process(object):
 
     @property
     def log(self):
-        try:
-            return self.context.log
-        except AttributeError:
-            return logutils.get_logger(__name__)
+        return self.context.log

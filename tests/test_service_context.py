@@ -224,6 +224,24 @@ def test_handle_signals_in_spawn_process(context, tmp_path):
     assert str(result[0]).startswith("'sleep' killed by signal")
 
 
+def test_handle_errors_in_error_handler_of_spawn_process(context, tmp_path):
+    cmdline = ["ls", "/no-such-file"]
+
+    class p(process.Process):
+        def __init__(self):
+            super(p, self).__init__("ls-foo", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+        def failed(self, rc, signal):
+            raise Exception("Oops")
+
+    with pytest.raises(Exception) as exc:
+        context.spawn_process(p())
+    assert str(exc.value).startswith("'ls-foo' failed, return code 2")
+
+
 def test_get_data_downloads_only_once(context):
     location = {"location": "https://www.ecmwf.int/"}
     one = context.get_data(location)
