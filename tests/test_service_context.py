@@ -11,6 +11,8 @@ from __future__ import absolute_import, unicode_literals
 
 import os
 
+import pytest
+
 from servicelib.context.service import ServiceContext
 from servicelib.core import Request
 
@@ -60,3 +62,15 @@ def test_get_data_files_persist(context):
     fname = context.get_data({"location": "https://www.ecmwf.int/"})
     context.cleanup()
     assert fname.stat()
+
+
+def test_download_unsupported_url_schemes(context):
+    with pytest.raises(Exception) as exc:
+        context.get_data({"location": "ftp://localhost/whatever"})
+    assert str(exc.value) == "ftp://localhost/whatever: Unsupported URL scheme 'ftp'"
+
+
+def test_download_errors(context):
+    with pytest.raises(Exception) as exc:
+        context.get_data({"location": "http://no-such-host"})
+    assert "No address associated with hostname" in str(exc.value)
