@@ -197,3 +197,20 @@ def test_handle_errors_in_error_handler_of_spawn_process(context, tmp_path):
     with pytest.raises(Exception) as exc:
         context.spawn_process(p())
     assert str(exc.value).startswith("'ls-foo' failed, return code 2")
+
+
+def test_handle_cleanup_errors_in_spawn_process(context):
+    cmdline = ["echo", "foo"]
+
+    class p(process.Process):
+        def __init__(self):
+            super(p, self).__init__("echo", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+        def cleanup(self):
+            raise Exception("Oops")
+
+    res = context.spawn_process(p())
+    assert res == subprocess.check_output(cmdline).decode("utf-8")
