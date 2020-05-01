@@ -169,6 +169,23 @@ def test_spawn_process_with_unlimited_output(context, tmp_path):
     assert res == "0" * zeroes.stat().st_size
 
 
+def test_handle_cleanup_errors_in_spawn_process(context):
+    cmdline = ["echo", "foo"]
+
+    class p(process.Process):
+        def __init__(self):
+            super(p, self).__init__("echo", cmdline)
+
+        def results(self):
+            return self.output.decode("utf-8")
+
+        def cleanup(self):
+            raise Exception("Oops")
+
+    res = context.spawn_process(p())
+    assert res == subprocess.check_output(cmdline).decode("utf-8")
+
+
 def test_get_data_downloads_only_once(context):
     location = {"location": "https://www.ecmwf.int/"}
     one = context.get_data(location)
