@@ -107,7 +107,12 @@ class ProcessRunner(object):
 
             # In the Celery days we restored here the original signal handlers.
 
-            result = self.proc.process_ended(rc, 0)
+            if rc < 0:
+                signal = -rc
+                rc = None
+            else:
+                signal = None
+            result = self.proc.process_ended(rc, signal)
 
         timers = self.proc.timers()
         if timers:

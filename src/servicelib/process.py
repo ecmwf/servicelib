@@ -67,7 +67,7 @@ class Process(object):
                     stack_info=True,
                 )
 
-            if signal:
+            if signal is not None:
                 raise Exception(
                     "'{}' killed by signal {}:\n{}\n{}".format(
                         self.name, signal, cmdline, self.output

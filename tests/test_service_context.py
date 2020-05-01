@@ -9,9 +9,13 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import os
 import json
+import os
+import signal
 import subprocess
+import sys
+import threading
+import time
 
 import pytest
 
@@ -169,21 +173,55 @@ def test_spawn_process_with_unlimited_output(context, tmp_path):
     assert res == "0" * zeroes.stat().st_size
 
 
-def test_handle_cleanup_errors_in_spawn_process(context):
-    cmdline = ["echo", "foo"]
+SLEEP_PY = """
+import os
+import sys
+import time
+
+with open(sys.argv[1], "wt") as f:
+    f.write(str(os.getpid()))
+
+time.sleep(10)
+"""
+
+
+def test_handle_signals_in_spawn_process(context, tmp_path):
+    script = tmp_path / "script.py"
+    with open(script, "wt") as f:
+        f.write(SLEEP_PY)
+
+    pid_file = tmp_path / "script.pid"
+    cmdline = [sys.executable, str(script), str(pid_file)]
 
     class p(process.Process):
         def __init__(self):
-            super(p, self).__init__("echo", cmdline)
+            super(p, self).__init__("sleep", cmdline)
 
         def results(self):
             return self.output.decode("utf-8")
 
-        def cleanup(self):
-            raise Exception("Oops")
+    result = []
 
-    res = context.spawn_process(p())
-    assert res == subprocess.check_output(cmdline).decode("utf-8")
+    def spawn():
+        try:
+            res = context.spawn_process(p())
+            result.append(res)
+        except Exception as exc:
+            result.append(exc)
+
+    t = threading.Thread(target=spawn)
+    t.start()
+
+    time.sleep(1)
+
+    with open(pid_file, "rt") as f:
+        pid = int(f.read().strip())
+
+    os.kill(pid, signal.SIGTERM)
+    t.join()
+
+    assert isinstance(result[0], Exception)
+    assert str(result[0]).startswith("'sleep' killed by signal")
 
 
 def test_get_data_downloads_only_once(context):
