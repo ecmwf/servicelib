@@ -47,6 +47,29 @@ def test_call_service(worker):
     assert res == "Bonjour, world!"
 
 
+def test_class_based_services(worker):
+    res = worker.http_post(
+        "/services/counter-1",
+        data=json.dumps([1]),
+        headers={"content-type": "application/json"},
+    )
+    count_1 = res
+
+    res = worker.http_post(
+        "/services/counter-1",
+        data=json.dumps([10]),
+        headers={"content-type": "application/json"},
+    )
+    assert res in {10, count_1 + 10}
+
+    res = worker.http_post(
+        "/services/counter-2",
+        data=json.dumps([100]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == 100
+
+
 def test_invalid_content_type(worker):
     with pytest.raises(Exception) as exc:
         worker.http_post(

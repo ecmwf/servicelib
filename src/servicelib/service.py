@@ -53,7 +53,7 @@ class ServiceInstance(object):
         self.home = home
 
     def execute(self, context, *args, **kwargs):
-        """Use-provided service implementation."""
+        """User-provided service implementation."""
         raise NotImplementedError()
 
     def _execute(self, req):
