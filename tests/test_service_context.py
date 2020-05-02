@@ -71,6 +71,5 @@ def test_download_unsupported_url_schemes(context):
 
 
 def test_download_errors(context):
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(Exception):
         context.get_data({"location": "http://no-such-host"})
-    assert "No address associated with hostname" in str(exc.value)
