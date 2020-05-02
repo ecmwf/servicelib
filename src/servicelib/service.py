@@ -147,10 +147,8 @@ def start_services(*services):
         _SERVICE_INSTANCES[name] = s
 
 
-def start_service(name=None, execute=None):
+def start_service(name=None):
     """Starts a daemon process which runs a single service.
-
-    See `start_services` for a description of the other arguments.
 
     """
     frame = inspect.currentframe().f_back
@@ -159,18 +157,11 @@ def start_service(name=None, execute=None):
     finally:
         del frame
 
-    home = os.path.dirname(mod.__file__)
-
     if name is None:
         name, _ = os.path.splitext(os.path.basename(mod.__file__))
 
-    if execute is None:
-        try:
-            execute = getattr(mod, "execute")
-        except Exception:
-            raise Exception(
-                "Execution request handler not provided, and no default found",
-            )
+    home = os.path.dirname(mod.__file__)
+    execute = getattr(mod, "execute")
 
     start_services(
         {"name": name, "execute": execute, "home": home,}

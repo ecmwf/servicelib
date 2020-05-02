@@ -172,7 +172,7 @@ def test_load_only_some_workers(worker, worker_cmd):
 @pytest.mark.parametrize(
     "services_dir,expected_error",
     [
-        ("no-execute", "Execution request handler not provided, and no default found"),
+        ("no-execute", "has no attribute 'execute'"),
         ("duplicate-services", "Service 'foo' already defined"),
     ],
 )
