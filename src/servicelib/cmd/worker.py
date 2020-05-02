@@ -16,11 +16,24 @@ import psutil
 
 from servicelib import config, logutils
 from servicelib.compat import Path
+from servicelib.config import cmdline
 from servicelib.config.client import env_var
 
 
 def main():
     logutils.configure_logging()
+
+    cmdline_config = cmdline.parse_args(
+        "worker.autoreload",
+        "worker.hostname",
+        "worker.load_workers",
+        "worker.num_processes",
+        "worker.num_threads",
+        "worker.port",
+        "worker.services_dir",
+    )
+    for k, v in cmdline_config.items():
+        os.environ[env_var(k)] = str(v)
 
     cmd = ["uwsgi", "--req-logger", "file:/dev/null"]
 

@@ -12,7 +12,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import atexit
-import socket
 
 import falcon
 
@@ -39,7 +38,7 @@ application.add_route("/services/{service}", WorkerResource(services))
 
 # Now that routes for services have been set up, we may add the services we
 # host here to the service registry.
-worker_hostname = config.get("worker.hostname", default=socket.getfqdn())
+worker_hostname = config.get("worker.hostname")
 worker_port = config.get("worker.port")
 service_urls = [
     (name, "http://{}:{}/services/{}".format(worker_hostname, worker_port, name,),)

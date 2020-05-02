@@ -105,7 +105,13 @@ class Worker(object):
     log = logutils.get_logger()
 
     def __init__(
-        self, uwsgi_ini_file, servicelib_yaml_file, pid_file, log_file, scratch_dir
+        self,
+        uwsgi_ini_file,
+        servicelib_yaml_file,
+        pid_file,
+        log_file,
+        scratch_dir,
+        *cmdline_args
     ):
         self.servicelib_yaml_file = servicelib_yaml_file
         self.pid_file = pid_file
@@ -173,10 +179,23 @@ class Worker(object):
                 self.servicelib_conf, f, encoding="utf-8", allow_unicode=True
             )
 
+        self.cmdline_args = cmdline_args
+
     def __enter__(self):
         env = dict(os.environ)
         env["SERVICELIB_CONFIG_URL"] = self.servicelib_yaml_file.resolve().as_uri()
-        subprocess.Popen("servicelib-worker", shell=True, env=env).wait()
+        cmdline = ["servicelib-worker"]
+        cmdline.extend(self.cmdline_args)
+        p = subprocess.Popen(
+            " ".join(cmdline),
+            shell=True,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        stdout, _ = p.communicate()
+        if p.returncode:
+            raise Exception(stdout)
         utils.wait_for_url("http://{}:{}/health".format(self.host, self.port))
         return self
 
@@ -229,7 +248,23 @@ def worker():
         ) as s:
             yield s
     finally:
+        return
         shutil.rmtree(str(tmp_path), ignore_errors=True)
+
+
+@pytest.fixture
+def worker_cmd(request, tmp_path):
+    def f(*cmdline_args):
+        return Worker(
+            tmp_path / "uwsgi.ini",
+            tmp_path / "servicelib.yaml",
+            tmp_path / "uwsgi.pid",
+            tmp_path / "uwsgi.log",
+            tmp_path / "scratch",
+            *cmdline_args
+        )
+
+    return f
 
 
 class ConfigServer:
