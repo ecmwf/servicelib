@@ -134,9 +134,15 @@ class Worker(object):
         scratch_dir.mkdir(parents=True, exist_ok=True)
 
         servicelib_dir = Path(__file__, "..", "..").resolve()
-        services_dir = str(servicelib_dir / "samples")
         scratch_dir = str(scratch_dir)
         uwsgi_ini_file = str(uwsgi_ini_file)
+
+        for a in cmdline_args:
+            if a.startswith("--worker-services-dir="):
+                services_dir = a[len("--worker-services-dir=") :]
+                break
+        else:
+            services_dir = str(servicelib_dir / "samples")
 
         self.uwsgi_ini = UWSGI_INI_TEMPLATE.format(
             host=self.host,
@@ -196,7 +202,16 @@ class Worker(object):
         stdout, _ = p.communicate()
         if p.returncode:
             raise Exception(stdout)
-        utils.wait_for_url("http://{}:{}/health".format(self.host, self.port))
+        try:
+            utils.wait_for_url("http://{}:{}/health".format(self.host, self.port))
+        except Exception as exc:
+            try:
+                with open(self.log_file, "rt") as f:
+                    exc = Exception(f.read())
+            except Exception:
+                pass
+            raise exc
+
         return self
 
     def __exit__(self, *exc_info):

@@ -167,3 +167,21 @@ def test_load_only_some_workers(worker, worker_cmd):
                 headers={"content-type": "application/json"},
             )
         assert str(exc.value).startswith("404")
+
+
+@pytest.mark.parametrize(
+    "services_dir,expected_error",
+    [
+        ("no-execute", "Execution request handler not provided, and no default found"),
+        ("duplicate-services", "Service 'foo' already defined"),
+    ],
+)
+def test_errors_in_service_loading(worker_cmd, services_dir, expected_error):
+    services_dir = Path(
+        __file__, "..", "..", "samples", "invalid-services", services_dir
+    ).resolve()
+    w = worker_cmd("--worker-services-dir={}".format(services_dir),)
+    with pytest.raises(Exception) as exc:
+        with w:
+            pass
+    assert expected_error in str(exc.value)

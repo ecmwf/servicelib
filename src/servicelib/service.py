@@ -142,7 +142,7 @@ def start_services(*services):
 
         name = s.name
         if name in _SERVICE_INSTANCES:
-            raise Exception("Service '%s' already defined", name)
+            raise Exception("Service '{}' already defined".format(name))
 
         _SERVICE_INSTANCES[name] = s
 
@@ -170,8 +170,6 @@ def start_service(name=None, execute=None):
         except Exception:
             raise Exception(
                 "Execution request handler not provided, and no default found",
-                exc_info=True,
-                stack_info=True,
             )
 
     start_services(
