@@ -70,6 +70,15 @@ def test_class_based_services(worker):
     assert res == 100
 
 
+def test_named_service(worker):
+    res = worker.http_post(
+        "/services/forty-two",
+        data=json.dumps([]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == 42
+
+
 def test_invalid_content_type(worker):
     with pytest.raises(Exception) as exc:
         worker.http_post(
