@@ -25,6 +25,10 @@ def key_to_arg(k):
     return k.replace(".", "_")
 
 
+def comma_separated_list(val):
+    return val.split(",")
+
+
 SUPPORTED_ENTRIES = {
     "worker.autoreload": {
         "type": int,
@@ -37,7 +41,7 @@ SUPPORTED_ENTRIES = {
         "help": "hostname to advertise for HTTP connections",
     },
     "worker.load_workers": {
-        "type": str,
+        "type": comma_separated_list,
         "metavar": "NAME[,NAME,..]",
         "help": "comma-separated list of workers to load",
     },

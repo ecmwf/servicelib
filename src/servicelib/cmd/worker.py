@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import json
 import os
 import sys
 
@@ -33,7 +34,11 @@ def main():
         "worker.services_dir",
     )
     for k, v in cmdline_config.items():
-        os.environ[env_var(k)] = str(v)
+        if isinstance(v, list):
+            v = json.dumps(v)
+        else:
+            v = str(v)
+        os.environ[env_var(k)] = v
 
     cmd = ["uwsgi", "--req-logger", "file:/dev/null"]
 

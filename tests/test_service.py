@@ -135,3 +135,35 @@ def test_swagger_ui_endpoint(worker):
 def test_extra_static_content_endpoint(worker):
     res = worker.http_get("/services-source-code/README.md")
     assert "Some sample files used in the test suite." in res.content.decode("utf-8")
+
+
+def test_load_only_some_workers(worker, worker_cmd):
+    res = worker.http_post(
+        "/services/echo",
+        data=json.dumps([42]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == [42]
+
+    res = worker.http_post(
+        "/services/hello",
+        data=json.dumps(["world"]),
+        headers={"content-type": "application/json"},
+    )
+    assert res == "Hello, world!"
+
+    with worker_cmd("--worker-load-workers=echo") as w:
+        res = w.http_post(
+            "/services/echo",
+            data=json.dumps([42]),
+            headers={"content-type": "application/json"},
+        )
+        assert res == [42]
+
+        with pytest.raises(Exception) as exc:
+            w.http_post(
+                "/services/hello",
+                data=json.dumps(["world"]),
+                headers={"content-type": "application/json"},
+            )
+        assert str(exc.value).startswith("404")

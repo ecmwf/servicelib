@@ -46,6 +46,7 @@ class Inventory(object):
 
 class DefaultInventory(Inventory):
     def service_modules(self):
+        workers_to_load = set(config.get("worker.load_workers", default=[]))
         ret = []
         for entry in scandir(
             config.get("worker.services_dir", default="/code/services")
@@ -55,6 +56,10 @@ class DefaultInventory(Inventory):
                 continue
 
             dname = entry.name
+            if workers_to_load and dname not in workers_to_load:
+                self.log.debug("Ignoring %s (not in %s)", dname, workers_to_load)
+                continue
+
             for fname in ("__init__.py", dname + ".py"):
                 path = os.path.join(entry.path, fname)
                 if not os.access(path, os.F_OK):
@@ -64,11 +69,6 @@ class DefaultInventory(Inventory):
                 ret.append("{dname}.{dname}".format(dname=dname))
 
         return ret
-
-
-class LegacyInventory(Inventory):
-    def service_modules(self):
-        raise NotImplementedError("Legacy `workers.yaml` loading not implemented")
 
 
 class MetviewInventory(Inventory):
@@ -83,7 +83,6 @@ class MetviewInventory(Inventory):
 
 _INSTANCE_MAP = {
     "default": DefaultInventory,
-    "eccharts-legacy": LegacyInventory,
     "metview": MetviewInventory,
 }
 
