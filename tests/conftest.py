@@ -223,9 +223,12 @@ class Worker(object):
         except Exception:
             pass
 
-        with open(self.pid_file, "rt") as f:
-            pid = int(f.read().strip())
-        os.kill(pid, signal.SIGTERM)
+        try:
+            with open(self.pid_file, "rt") as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
 
     def http_post(self, path, **kwargs):
         res = requests.post(
