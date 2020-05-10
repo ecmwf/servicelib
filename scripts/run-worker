@@ -6,9 +6,10 @@ here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1090
 . "${here}/lib.sh"
 
+env=${ENV:-py38}
 top_dir=$(cd "${here}"/.. && pwd)
-if [ ! -d "${top_dir}/.tox/py37" ] ; then
-  create_venv
+if [ ! -d "${top_dir}/.tox/${env}" ] ; then
+  create_venv "$env"
 fi
 
 
@@ -31,7 +32,7 @@ if [ -n "${PYTHONPATH:-}" ] ; then
 fi
 
 env \
-  PATH="${top_dir}/.tox/py37/bin:$PATH" \
+  PATH="${top_dir}/.tox/${env}/bin:$PATH" \
   PYTHONPATH="${worker_pythonpath}" \
   SERVICELIB_CONFIG_URL="file://${here}/servicelib.yaml" \
   SERVICELIB_RESULTS_DIRS="${scratch_dir}" \
