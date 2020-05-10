@@ -6,7 +6,8 @@ memcached_container="servicelib-memcached"
 redis_container="servicelib-redis"
 
 function create_venv() {
-  tox --recreate --notest -e py37
+  env="$1"
+  tox --recreate --notest -e "$env"
 }
 
 function stop_aux_services() {

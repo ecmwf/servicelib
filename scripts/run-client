@@ -8,8 +8,10 @@ top_dir=$(cd "${here}"/.. && pwd)
 scratch_dir="/tmp/servicelib-scratch"
 mkdir -p $scratch_dir
 
+env=${ENV:-py38}
+
 env \
-  PATH="${top_dir}/.tox/py37/bin:$PATH" \
+  PATH="${top_dir}/.tox/${env}/bin:$PATH" \
   PYTHONPATH="${top_dir}/src:${top_dir}/samples" \
   SERVICELIB_CONFIG_URL="file://${here}/servicelib.yaml" \
   servicelib-client "$@"
