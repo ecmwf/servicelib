@@ -31,6 +31,8 @@ def main():
     except Exception as e:
         print(str(e), file=sys.stderr)
         return 1
+    finally:
+        broker.close()
     print(json.dumps(res))
 
 

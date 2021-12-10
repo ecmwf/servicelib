@@ -186,3 +186,6 @@ class Broker(object):
         check_args(kwargs)
 
         return Result(self.http_session, service_name, args, kwargs, context)
+
+    def close(self):
+        self.http_session.close()

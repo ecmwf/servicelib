@@ -122,19 +122,29 @@ def test_write_without_close(local_results):
 
 def test_error_in_closing_result(local_results):
     r = local_results.create("text/plain")
-    with pytest.raises(Exception) as exc:
-        with r:
-            r._file_obj = None
-    assert str(exc.value) == "'NoneType' object has no attribute 'close'"
+    old_file_obj = None
+    try:
+        with pytest.raises(Exception) as exc:
+            with r:
+                old_file_obj = r._file_obj
+                r._file_obj = None
+        assert str(exc.value) == "'NoneType' object has no attribute 'close'"
+    finally:
+        old_file_obj.close()
 
 
 def test_error_in_closing_result_does_not_hide_errors(local_results):
     r = local_results.create("text/plain")
-    with pytest.raises(Exception) as exc:
-        with r:
-            r._file_obj = None
-            raise Exception("Boom!")
-    assert str(exc.value) == "Boom!"
+    old_file_obj = None
+    try:
+        with pytest.raises(Exception) as exc:
+            with r:
+                old_file_obj = r._file_obj
+                r._file_obj = None
+                raise Exception("Boom!")
+        assert str(exc.value) == "Boom!"
+    finally:
+        old_file_obj.close()
 
 
 def test_result_as_local_file(local_results):

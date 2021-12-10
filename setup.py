@@ -40,7 +40,7 @@ setup(
             "coverage[toml]<5.0",
             "pyflakes",
             "pytest",
-            "pytest-console-scripts",
+            "pytest-console-scripts<1.0.0",  # For Python 2.7 support.
             "pytest-cov",
             "pytest-lazy-fixture",
             "pytest-rerunfailures",

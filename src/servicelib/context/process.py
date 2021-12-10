@@ -105,6 +105,15 @@ class ProcessRunner(object):
 
             rc = p.wait()
 
+            # As of December 2021 `pytest` now complains about these file
+            # objects being left open.
+            for f in p.stdout, p.stderr:
+                if f is not None:
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+
             # In the Celery days we restored here the original signal handlers.
 
             if rc < 0:
