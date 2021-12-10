@@ -17,6 +17,7 @@ pkgs.mkShell {
     # Install Python 3.8 runtime for tests and build tools.
     (python38.withPackages
       (ps: with ps ; [
+        flit
         tox
       ]))
 

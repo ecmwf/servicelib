@@ -1,8 +1,0 @@
-falcon
-psutil
-python-json-logger
-redis
-requests
-six
-structlog
-uwsgi
