@@ -5,6 +5,8 @@ in
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # Needed to install uWSGI.
+    expat
+    libintl
     libxml2
     ncurses
     pcre
@@ -26,5 +28,5 @@ pkgs.mkShell {
 
     # Keep this line if you use bash.
     bashInteractive
-  ];
+  ] ++ lib.optionals stdenv.isDarwin [ darwin.IOKit ];
 }
