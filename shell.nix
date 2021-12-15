@@ -19,8 +19,8 @@ pkgs.mkShell {
       (ps: with ps ; [
         flit
         tox
+        wheel
       ]))
-
 
     # Niv (https://github.com/nmattia/niv), to keep dependencies up-to-date.
     #
