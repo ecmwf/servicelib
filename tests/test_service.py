@@ -11,6 +11,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 import re
+import sys
 
 import pytest
 import requests
@@ -146,6 +147,7 @@ def test_health_endpoint(worker):
     assert res.status_code == 200
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="No process stats on macOS")
 def test_stats_endpoint(worker):
     res = worker.http_get("/stats")
     assert res.status_code == 200

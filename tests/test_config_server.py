@@ -12,12 +12,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 import time
 import sys
 
-from multiprocessing import Process, Pipe
+import multiprocessing
 
 import pytest
 import requests
 
-from servicelib import utils
+from servicelib import compat, utils
 from servicelib.config import client
 
 
@@ -82,7 +82,12 @@ def test_client_needs_cached_values_when_server_is_down(config_server):
 def test_settings_change_in_child_process(config_server):
     config_server.start()
 
-    parent_conn, child_conn = Pipe()
+    if compat.PY3:
+        ctx = multiprocessing.get_context("fork")
+    else:
+        ctx = multiprocessing
+
+    parent_conn, child_conn = ctx.Pipe()
 
     def child(conn):
         c = client.instance(url=config_server.url)
@@ -98,7 +103,7 @@ def test_settings_change_in_child_process(config_server):
 
     config_server.client.set("foo", 42)
 
-    p = Process(target=child, args=(child_conn,))
+    p = ctx.Process(target=child, args=(child_conn,))
     p.start()
 
     try:

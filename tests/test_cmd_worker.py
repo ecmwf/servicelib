@@ -9,9 +9,12 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import sys
+
 import pytest
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="No process stats on macOS")
 def test_command_line_options(worker_cmd):
     with worker_cmd("--worker-num-processes=1") as w:
         res = w.http_get("/stats").json()
